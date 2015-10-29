@@ -1,0 +1,7 @@
+name: WorldManagement
+main: me.koledogcodes.worldcontrol.WorldControl
+version: 1.1
+commands:
+  worldcontrol:
+    description: General command for WorldControl.
+    aliases: [wc, worldc, wcontrol]

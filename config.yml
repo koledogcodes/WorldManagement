@@ -1,0 +1,9 @@
+worlds-to-load-on-startup:
+- world
+- world_nether
+- world_the_end
+
+blacklist-worlds: []
+
+auto-update: true
+opt-out: true
