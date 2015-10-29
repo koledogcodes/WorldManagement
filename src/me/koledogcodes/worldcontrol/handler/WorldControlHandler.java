@@ -7,17 +7,23 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.SignChangeEvent;
 
 import me.koledogcodes.worldcontrol.WorldControl;
+import me.koledogcodes.worldcontrol.api.WorldControlSignType;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
+import me.koledogcodes.worldcontrol.configs.WorldSignFile;
 import me.koledogcodes.worldcontrol.configs.WorldSpawnFile;
 import me.koledogcodes.worldcontrol.configs.WorldWhitelistFile;
+import me.koledogcodes.worldcontrol.custom.events.WorldControlLoadWorldEvent;
+import me.koledogcodes.worldcontrol.custom.events.WorldControlUnloadWorldEvent;
 
 public class WorldControlHandler {
 	
@@ -45,6 +51,7 @@ public class WorldControlHandler {
 				logConsole("World '" + world + "' has been loaded.");
 				if (player != null){
 					ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' has been loaded!");
+					Bukkit.getServer().getPluginManager().callEvent(new WorldControlLoadWorldEvent(player, world));
 				}
 			}
 			else {
@@ -299,6 +306,34 @@ public class WorldControlHandler {
 		}		
 	}
 	
+	public void generateWorldConfiguration(String world){
+		if (worldFolderExists(world)){
+			if (worldExists(world)){
+				//Generate
+					setWorldConfigOption(world, "pvp", true);	
+					setWorldConfigOption(world, "build", true);
+					setWorldConfigOption(world, "certain-blocks-place-allow", new String[]{"SEEDS"});
+					setWorldConfigOption(world, "certain-blocks-break-allow", new String[]{"GRASS", "LONG_GRASS"});
+					setWorldConfigOption(world, "weather-locked", false);
+					setWorldConfigOption(world, "mob-spawn", true);
+					setWorldConfigOption(world, "certain-mob-spawn-allow", new String[]{"CHICKEN","COW","SHEEP"});
+					setWorldConfigOption(world, "player-limit", 1);	
+					setWorldConfigOption(world, "commands-allowed", true);	
+					setWorldConfigOption(world, "certain-commands-use-allow", new String[]{"spawn", "msg", "r"});
+					setWorldConfigOption(world, "fallback-world", "world");
+					setWorldConfigOption(world, "players-invincible", true);
+					setWorldConfigOption(world, "mobs-invincible", true);
+					setWorldConfigOption(world, "mobs-drop-loot", true);
+					setWorldConfigOption(world, "mobs-drop-exp", true);
+					setWorldConfigOption(world, "players-drop-loot", true);
+					setWorldConfigOption(world, "players-drop-exp", true);
+					setWorldConfigOption(world, "chat", true);
+					WorldConfigFile.saveCustomConfig();
+					WorldConfigFile.reloadCustomConfig();
+			}
+		}
+	}
+	
 	public void setWorldConfigOption(Player player, String setting, Object value){
 		if (WorldConfigFile.getCustomConfig().getString(world.get(player)  + "." +  setting) == null){
 			WorldConfigFile.getCustomConfig().set(world.get(player)  + "." +  setting, value);
@@ -312,17 +347,16 @@ public class WorldControlHandler {
 		value = null;
 	}
 	
-	public void setWorldConfigOption(String world, String setting, Object value){
-		if (WorldConfigFile.getCustomConfig().getString(world + "." + setting) == null){
-			WorldConfigFile.getCustomConfig().set(world + "." + setting, value);
+	public void setWorldConfigOption(String world, String worldSetting, Object value){
+		if (WorldConfigFile.getCustomConfig().getString(world  + "." +  worldSetting) == null){
+			WorldConfigFile.getCustomConfig().set(world  + "." +  worldSetting, value);
 			WorldConfigFile.saveCustomConfig();
 		}
 		else {
 			return;
 		}
 		
-		setting = null;
-		world = null;
+		worldSetting = null;
 		value = null;
 	}
 	
@@ -349,6 +383,7 @@ public class WorldControlHandler {
 			}
 			else {
 				Bukkit.unloadWorld(world, save);
+				Bukkit.getServer().getPluginManager().callEvent(new WorldControlUnloadWorldEvent(player, world));
 				logConsole("World '" + world + "' has unloaded.");
 				if (player != null){
 				ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' has been unloaded!");	
@@ -514,7 +549,92 @@ public class WorldControlHandler {
 	}
 	
 	public void regenerateConfigForWorlds(){
-		//								  //
+		List<String> worlds = getAllWorlds();
+		for (int i = 0; i < worlds.size(); i++){
+			if (worldContainsSettings(worlds.get(i))){
+				generateWorldConfiguration(worlds.get(i));
+			}
+		}
+	}
+
+	
+	public void setSignLinesEvent(SignChangeEvent e, String line1, String line2, String line3, String line4){
+		if (line1.equalsIgnoreCase("%line%")){
+			e.setLine(0, colorTranslate(line1 + e.getLine(0)));
+		}
+		else {
+			e.setLine(0, colorTranslate(line1));
+		}
+		
+		if (line2.equalsIgnoreCase("%line%")){
+			e.setLine(1, colorTranslate(line2 + e.getLine(1)));
+		}
+		else {
+			e.setLine(1, colorTranslate(line2));
+		}
+		
+		if (line3.equalsIgnoreCase("%line%")){
+			e.setLine(2, colorTranslate(line3 + e.getLine(2)));
+		}
+		else {
+			e.setLine(2, colorTranslate(line3));
+		}
+		
+		if (line4.equalsIgnoreCase("%line%")){
+			e.setLine(3, colorTranslate(line4 + e.getLine(3)));
+		}
+		else {
+			e.setLine(3, colorTranslate(line4));
+		}
+		
+	}
+	
+	public void clearSignEvent(SignChangeEvent s){
+		s.setLine(0, "");
+		s.setLine(1, "");
+		s.setLine(2, "");
+		s.setLine(3, "");
+	}
+	
+	public void toggleWorldControlSign(Location loc){
+		List<String> signs = getAllWorldControlSignLoc();
+		if (signs.contains(parseLocationToString(loc))){
+			return;
+		}
+		else {
+			signs.add(parseLocationToString(loc));
+			setWorldControlSignLocations(signs);
+		}
+	}
+	
+	public void setWorldControlSignLocations(List<String> signs){
+		WorldSignFile.getCustomConfig().set("Signs", signs);
+		WorldSignFile.saveCustomConfig();
+	}
+	
+	public void setWorldControlSignType(Location loc, WorldControlSignType type){
+		WorldSignFile.getCustomConfig().set(parseLocationToString(loc) + ".type", type.name());
+		WorldSignFile.saveCustomConfig();
+	}
+	
+	public Object getWorldControlSignType(Location loc){
+		return WorldSignFile.getCustomConfig().get(parseLocationToString(loc) + ".type").toString();
+	}
+	
+	public List<String> getAllWorldControlSignLoc(){
+		return WorldSignFile.getCustomConfig().getStringList("Signs");
+	}
+	
+	public String colorTranslate(String textToTranslate){
+		return ChatColor.translateAlternateColorCodes('&', textToTranslate);
+	}
+	
+	public String parseLocationToString(Location loc){
+		return loc.getWorld().getName() + " " + loc.getBlockX() + " " + loc.getBlockY() + " " + loc.getBlockZ();
+	}
+	
+	public Location parseStringToLocation(String loc){
+		return new Location(Bukkit.getWorld(loc.split(" ")[0]), Double.parseDouble(loc.split(" ")[1]), Double.parseDouble(loc.split(" ")[2]), Double.parseDouble(loc.split(" ")[3]));
 	}
 	
 	public void logConsole(String message){

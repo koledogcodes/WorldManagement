@@ -35,6 +35,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerPVP(EntityDamageByEntityEvent e){
 	  if (e.getEntity() instanceof Player && e.getDamager() instanceof Player){
+		if (e.getEntity().hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 		  if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "pvp")){
 			  return;
@@ -52,7 +53,7 @@ public class BukkitWorldControlEvent implements Listener {
 	public void onPlayerBlockPlace(BlockPlaceEvent e){
 		Player player = e.getPlayer();
 		List<Object> blacklist = (List<Object>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "certain-blocks-place-allow");
-
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "build")){
 				  return;
@@ -75,7 +76,7 @@ public class BukkitWorldControlEvent implements Listener {
 	public void onPlayerBlockBreak(BlockBreakEvent e){
 		Player player = e.getPlayer();
 		List<Object> blacklist = (List<Object>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "certain-blocks-break-allow");
-		
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "build")){
 				  return;
@@ -129,6 +130,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerTeleport(PlayerTeleportEvent e){
 		Player player = e.getPlayer();
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(e.getTo().getWorld().getName())){
 			if (((int) WorldControl.getWorldSettingValue(e.getTo().getWorld().getName(), "player-limit")) == -1){
 				ChatUtili.sendTranslatedMessage(player, "&aSuccesfully tped to world '" + player.getWorld().getName() + "' spawn location.");	
@@ -156,6 +158,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerJoin(PlayerJoinEvent e){
 		Player player = e.getPlayer();
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			if ((int) WorldControl.getWorldSettingValue(player.getWorld().getName(), "player-limit") <= -1){
 			return;	
@@ -173,7 +176,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerEnterCommand(PlayerCommandPreprocessEvent e){
 		Player player = e.getPlayer();
-		
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (e.getMessage().replace("/", "").split(" ")[0].equalsIgnoreCase("worldcontrol") || e.getMessage().replace("/", "").split(" ")[0].equalsIgnoreCase("wc") || e.getMessage().replace("/", "").split(" ")[0].equalsIgnoreCase("worldc") || e.getMessage().replace("/", "").split(" ")[0].equalsIgnoreCase("wcontrol")){
 			return;
 		}
@@ -197,6 +200,7 @@ public class BukkitWorldControlEvent implements Listener {
 	//TODO Invincible [SETTING]
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerDamage(EntityDamageEvent e){
+		if (e.getEntity().hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 			if (e.getEntity() instanceof Player){
 				Player player = (Player) e.getEntity();
@@ -217,6 +221,7 @@ public class BukkitWorldControlEvent implements Listener {
 	public void onEntityDeath(EntityDeathEvent e){
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 			if (e.getEntity() instanceof Player){
+				if (e.getEntity().hasPermission("worldcontrol.override.*")){ return; }
 				if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "players-drop-loot")){
 					return;
 				}
@@ -253,6 +258,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerChat(AsyncPlayerChatEvent e){
 		Player player = e.getPlayer();
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "chat")){
 				return;
@@ -268,7 +274,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerTeleport2(PlayerTeleportEvent e){
 	Player player = e.getPlayer();
-	
+	if (player.hasPermission("worldcontrol.override.*")){ return; }
 	if (WorldControl.worldWhitelistIsEnabled(e.getTo().getWorld().getName())){
 		if (WorldControl.worldWhiteListHasPlayer(player.getName(), e.getTo().getWorld().getName()) == false){
 			e.setCancelled(true);
@@ -279,5 +285,6 @@ public class BukkitWorldControlEvent implements Listener {
 		}
 	}
 	}
+	
 	
 }

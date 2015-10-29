@@ -10,9 +10,11 @@ import org.mcstats.Metrics;
 import me.koledogcodes.worldcontrol.commands.worldControlCommand;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
+import me.koledogcodes.worldcontrol.configs.WorldSignFile;
 import me.koledogcodes.worldcontrol.configs.WorldSpawnFile;
 import me.koledogcodes.worldcontrol.configs.WorldWhitelistFile;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlEvent;
+import me.koledogcodes.worldcontrol.events.BukkitWorldControlSignEvent;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
 import me.koledogcodes.worldcontrol.handler.WorldControlHandler;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketHandler;
@@ -28,7 +30,6 @@ public class WorldControl extends JavaPlugin {
 	@SuppressWarnings("unused")
 	public void onEnable(){
 		try {
-			
 			Updater updater = null;
 			if (getConfig().getBoolean("auto-update")){
 				updater = new Updater(this, 95788, getFile(), UpdateType.NO_VERSION_CHECK, false);
@@ -37,7 +38,6 @@ public class WorldControl extends JavaPlugin {
 				updater = new Updater(this, 95788, getFile(), UpdateType.NO_DOWNLOAD, true);
 			}
 
-			
 			Metrics metrics = new Metrics(this);
 			if (getConfig().getBoolean("opt-out")){
 				metrics.start();
@@ -64,14 +64,17 @@ public class WorldControl extends JavaPlugin {
 		new WorldConfigFile (this);
 		new WorldWhitelistFile (this);
 		new WorldSpawnFile (this);
+		new WorldSignFile (this);
 		
 		saveDefaultConfig();
 		reloadConfig();
 		WorldConfigFile.reloadCustomConfig();
 		WorldWhitelistFile.reloadCustomConfig();
 		WorldSpawnFile.reloadCustomConfig();
+		WorldSignFile.reloadCustomConfig();
 		
-		Bukkit.getServer().getPluginManager().registerEvents(new BukkitWorldControlEvent (this), this);
+		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlSignEvent (this), this);
+		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlEvent (this), this);
 		
 		getCommand("worldcontrol").setExecutor(new worldControlCommand (this));
 		
@@ -81,6 +84,9 @@ public class WorldControl extends JavaPlugin {
 		for (int i = 0; i < getConfig().getStringList("worlds-to-load-on-startup").size(); i++){
 			handler.loadWorld(null, getConfig().getStringList("worlds-to-load-on-startup").get(i));
 		}
+		
+		//Regenerate Configuration
+		handler.regenerateConfigForWorlds();
 	}
 	
 	public void onDisable(){
