@@ -9,6 +9,7 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
@@ -292,6 +293,16 @@ public class WorldControlHandler {
 					setWorldConfigOption(player, "players-drop-loot", true);
 					setWorldConfigOption(player, "players-drop-exp", true);
 					setWorldConfigOption(player, "chat", true);
+					setWorldConfigOption(player, "mob-limit", 100);
+					setWorldConfigOption(player, "player-interact", true);
+					setWorldConfigOption(player, "explosion", true);
+					setWorldConfigOption(player, "nether-portal-can-create", true);
+					setWorldConfigOption(player, "nether-portal-teleport", true);
+					setWorldConfigOption(player, "title-join", false);
+					setWorldConfigOption(player, "title-join-message-main", "&f&lWelcome <player>!");
+					setWorldConfigOption(player, "title-join-message-main-display-time", 5);
+					setWorldConfigOption(player, "title-join-message-sub", "<world-online>/<world-online-max>");
+					setWorldConfigOption(player, "title-join-message-sub-display-time", 5);
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 				ChatUtili.sendTranslatedMessage(player, "&aGenerated config for world '" + world.get(player) + "'.");
@@ -328,6 +339,16 @@ public class WorldControlHandler {
 					setWorldConfigOption(world, "players-drop-loot", true);
 					setWorldConfigOption(world, "players-drop-exp", true);
 					setWorldConfigOption(world, "chat", true);
+					setWorldConfigOption(world, "mob-limit", 100);
+					setWorldConfigOption(world, "player-interact", true);
+					setWorldConfigOption(world, "explosion", true);
+					setWorldConfigOption(world, "nether-portal-can-create", true);
+					setWorldConfigOption(world, "nether-portal-teleport", true);
+					setWorldConfigOption(world, "title-join", false);
+					setWorldConfigOption(world, "title-join-message-main", "&f&lWelcome <player>!");
+					setWorldConfigOption(world, "title-join-message-main-display-time", 5);
+					setWorldConfigOption(world, "title-join-message-sub", "<world-online>/<world-online-max>");
+					setWorldConfigOption(world, "title-join-message-sub-display-time", 5);
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 			}
@@ -605,6 +626,15 @@ public class WorldControlHandler {
 			signs.add(parseLocationToString(loc));
 			setWorldControlSignLocations(signs);
 		}
+	}
+	
+	public String constructCustomJoinMessage(Player player, World world, String string){
+		string = string.replaceAll("<player>", player.getName());
+		string = string.replaceAll("<displayname>", player.getDisplayName());
+		string = string.replaceAll("<world-online>", world.getPlayers().size() + "");
+		string = string.replaceAll("<world-online-max>", (int) getWorldSettingValue(world.getName(), "player-limit") + "");
+		string = string.replaceAll("<players-online>", Bukkit.getServer().getOnlinePlayers().size() + "");
+		return string;
 	}
 	
 	public void setWorldControlSignLocations(List<String> signs){

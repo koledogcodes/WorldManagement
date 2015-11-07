@@ -1,8 +1,14 @@
 package me.koledogcodes.worldcontrol.events;
 
+import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.TravelAgent;
+import org.bukkit.World.Environment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -13,15 +19,23 @@ import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.weather.WeatherChangeEvent;
+import org.bukkit.event.world.PortalCreateEvent;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
 import me.koledogcodes.worldcontrol.handler.WorldControlHandler;
+import me.koledogcodes.worldcontrol.wrapped.packets.PacketHandler;
+import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutTitle;
 
 public class BukkitWorldControlEvent implements Listener {
 	
@@ -30,6 +44,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 
 	private WorldControlHandler WorldControl = new WorldControlHandler();
+	private HashMap<Player, String> customJoinMessage = new HashMap<Player, String>();
 	
 	//TODO PvP [SETTING]
 	@EventHandler (priority = EventPriority.MONITOR)
@@ -286,5 +301,141 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	}
 	
+	//TODO Limit mobs per world [SETTING]
+	@EventHandler
+	public void onMobSpawnLimit(CreatureSpawnEvent e){
+		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
+			if (e.getEntity().getWorld().getLivingEntities().size() > (int) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-limit")){
+				e.setCancelled(true);
+			}
+		}
+	}
+	
+	//TODO Player Interact [SETTING]
+	@EventHandler (priority = EventPriority.MONITOR)
+	public void onPlayerInteract(PlayerInteractEvent e){
+		Player player = e.getPlayer();
+		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
+			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "player-interact")){
+				return;
+			}
+			else {
+				e.setCancelled(true);
+				ChatUtili.sendTranslatedMessage(player, "&cYou cannot use &4'" + player.getItemInHand().getType().name() + "' &cin this world.");
+			}
+		}
+	}
+	
+	//TODO Explode [SETTING]
+	@EventHandler
+	public void onEntityExplode(EntityExplodeEvent e){
+		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
+			if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "explosion")){
+				return;
+			}
+			else {
+				e.setCancelled(true);
+			}
+		}
+	}
+	
+	//TODO Nether Portal Teleport [SETTING]
+	@EventHandler (priority = EventPriority.MONITOR)
+	public void onPlayerPortalTeleport(PlayerPortalEvent e){
+		Player player = e.getPlayer();
+		if (e.getCause().equals(TeleportCause.NETHER_PORTAL)){
+		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
+			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "nether-portal-teleport")){
+				try {
+					if (player.getWorld().getEnvironment().equals(Environment.NORMAL)){
+						TravelAgent travel = e.getPortalTravelAgent();
+						Location newLoc = player.getLocation().clone();
+						newLoc.setWorld(Bukkit.getWorld(player.getWorld().getName() + "_nether"));
+						travel.setSearchRadius(5);
+						travel.findOrCreate(newLoc);
+						
+						e.useTravelAgent(true);
+						e.setPortalTravelAgent(travel);
+						e.setTo(newLoc);
+					}				
+					else if (player.getWorld().getEnvironment().equals(Environment.NETHER)){
+						TravelAgent travel = e.getPortalTravelAgent();
+						Location newLoc = player.getLocation().clone();
+						newLoc.setWorld(Bukkit.getWorld(player.getWorld().getName().replaceAll("_nether", "")));
+						travel.setSearchRadius(5);
+						travel.findOrCreate(newLoc);
+						
+						e.useTravelAgent(true);
+						e.setPortalTravelAgent(travel);
+						e.setTo(newLoc);
+					}
+				}
+				catch (Exception exc){
+					ChatUtili.sendTranslatedMessage(player, "&cAlternate world must be created to use this portal.");
+				}
+				return;
+			}
+			else {
+				e.setCancelled(true);
+				ChatUtili.sendTranslatedMessage(player, "&cYou cannot use portals in this world.");
+			}
+		}
+	   }
+	}
+	
+	//TODO Nether Portal Create [SETTING]
+	@EventHandler (priority = EventPriority.MONITOR)
+	public void onPlayerPortalCreate(PortalCreateEvent e){
+		if (WorldControl.worldContainsSettings(e.getWorld().getName())){
+			if ((boolean) WorldControl.getWorldSettingValue(e.getWorld().getName(), "nether-portal-can-create")){
+				return;
+			}
+			else {
+				e.setCancelled(true);
+				for (Entity ent : e.getBlocks().get(0).getWorld().getNearbyEntities(e.getBlocks().get(0).getLocation(), 7, 7, 7)){
+					if (ent.getType() == EntityType.PLAYER){
+						Player player = (Player) ent;
+						ChatUtili.sendTranslatedMessage(player, "&cSorry, portals cannot be created in this world.");
+					}
+					else {
+						continue;
+					}
+				}
+			}
+		}
+	}
+	
+	//TODO World Title Join [FEATURE]
+	@EventHandler
+	public void onPlayerChangeWorld(PlayerChangedWorldEvent e){
+		Player player = e.getPlayer();
+		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
+			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "title-join")){
+				if (PacketHandler.getBukkitVersion().contains("v1_8")){
+					
+					if (((String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "title-join-message-main")).equalsIgnoreCase("none") == false){
+					customJoinMessage.put(player, WorldControl.constructCustomJoinMessage(player, e.getPlayer().getWorld(), (String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "title-join-message-main")));
+					PacketOutTitle title = new PacketOutTitle();
+					int displayTime = (int) WorldControl.getWorldSettingValue(player.getWorld().getName(), "title-join-message-main-display-time") * 20;
+					title.sendTitle(player, customJoinMessage.get(player), displayTime, displayTime, displayTime);
+					}
+					
+					if (((String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "title-join-message-sub")).equalsIgnoreCase("none") == false){
+					customJoinMessage.put(player, WorldControl.constructCustomJoinMessage(player, e.getPlayer().getWorld(), (String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "title-join-message-sub")));
+					PacketOutTitle title = new PacketOutTitle();
+					int displayTime = (int) WorldControl.getWorldSettingValue(player.getWorld().getName(), "title-join-message-sub-display-time") * 20;
+					title.sendSubtitle(player, customJoinMessage.get(player), displayTime, displayTime, displayTime);
+					}
+					
+				}
+				else {
+					return;
+				}
+			}
+			else {
+				return;
+			}
+		}
+	}
 	
 }
