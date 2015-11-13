@@ -5,5 +5,7 @@ worlds-to-load-on-startup:
 
 blacklist-worlds: []
 
+portal-teleport-message: 'You have been teleported <player>!'
+
 auto-update: true
 opt-out: true

@@ -1,12 +1,14 @@
 package me.koledogcodes.worldcontrol.commands;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldType;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
@@ -60,12 +62,21 @@ public class worldControlCommand implements CommandExecutor {
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc whitelist <world> list", " &b- &b(Hover)", "&aThis command list all players in the whitelist for the specifed world.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc whitelist <world> set <player>", " &b- &b(Hover)", "&aThis command toogles players on or off \n&athe whitelist for the specifed world.");	
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc setlocation", " &b- &b(Hover)", "&aThis command sets the tp location for the specifed world. \n&a(Only applies to /wc tp <world>)");		
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc set-portal <portal> <destation name> &3<replacement block>", " &b- &b(Hover)", "&aThis command sets a portal.");	
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc set-portal-dest <destationn name>", " &b- &b(Hover)", "&aThis command sets a destation for a portal.");	
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc delete-portal <portal>", " &b- &b(Hover)", "&aThis command deletes a portal.");	
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc delete-portal-dest <destation name>", " &b- &b(Hover)", "&aThis command deletes a destation.");	
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc portal-list", " &b- &b(Hover)", "&aList all the portals.");
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc dest-list", " &b- &b(Hover)", "&aThis command list all portal destation.");
 			return true;
 		}
 		
 		if (args.length == 1){
 		if (args[0].equalsIgnoreCase("create")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to create.");		
+		}
+		if (args[0].equalsIgnoreCase("ip")){
+			ChatUtili.sendTranslatedMessage(player, "&aServer Ip: " + Bukkit.getServer().getIp());		
 		}
 		else if (args[0].equalsIgnoreCase("exist")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to check.");			
@@ -102,6 +113,24 @@ public class worldControlCommand implements CommandExecutor {
 		else if (args[0].equalsIgnoreCase("setLocation") || args[0].equalsIgnoreCase("setLoc")){
 			WorldControl.setWorldTeleportLocation(player.getWorld().getName(), player.getLocation());
 			ChatUtili.sendTranslatedMessage(player, "&aWorld '" + player.getWorld().getName() + "' tp location has been set at current location.");
+		}
+		else if (args[0].equalsIgnoreCase("set-portal")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a portal name.");
+		}
+		else if (args[0].equalsIgnoreCase("set-portal-dest")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a destation name for this location.");
+		}
+		else if (args[0].equalsIgnoreCase("delete-portal")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a portal to delete.");
+		}
+		else if (args[0].equalsIgnoreCase("delete-portal-dest")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a destation name to delete.");
+		}
+		else if (args[0].equalsIgnoreCase("portal-list")){
+			ChatUtili.sendTranslatedMessage(player, "&6Portals: &f" + WorldControl.getCleanPortalList());
+		}
+		else if (args[0].equalsIgnoreCase("dest-list")){
+			ChatUtili.sendTranslatedMessage(player, "&6Dests: &f" + WorldControl.getCleanDestinationsList());
 		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
@@ -159,6 +188,31 @@ public class worldControlCommand implements CommandExecutor {
 		else if (args[0].equalsIgnoreCase("whitelist")){
 			WorldControl.toggleWorldWhitelist(player, args[1]);
 		}
+		else if (args[0].equalsIgnoreCase("set-portal")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a existing destation name.");
+		}
+		else if (args[0].equalsIgnoreCase("set-portal-dest")){
+			WorldControl.setDestination(args[1].toLowerCase(), player.getLocation());
+			ChatUtili.sendTranslatedMessage(player, "&aDestination '" + args[1].toLowerCase() + "' has been set at current location.");
+		}
+		else if (args[0].equalsIgnoreCase("delete-portal")){
+			if (WorldControl.portalExists(args[1].toLowerCase())){
+				WorldControl.deletePortal(args[1].toLowerCase());
+				ChatUtili.sendTranslatedMessage(player, "&aPortal '" + args[1].toLowerCase() + "' has been deleted.");
+			}
+			else {
+				ChatUtili.sendTranslatedMessage(player, "&cPortal '" + args[1].toLowerCase() + "' does not exist.");
+			}
+		}
+		else if (args[0].equalsIgnoreCase("delete-portal-dest")){
+			if (WorldControl.portalDestinationExists(args[1].toLowerCase())){
+				WorldControl.deleteDestination(args[1].toLowerCase());
+				ChatUtili.sendTranslatedMessage(player, "&aDestination '" + args[1].toLowerCase() + "' has been deleted.");
+			}
+			else {
+				ChatUtili.sendTranslatedMessage(player, "&cDestination '" + args[1].toLowerCase() + "' does not exist.");
+			}		
+		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
 		}
@@ -203,6 +257,14 @@ public class worldControlCommand implements CommandExecutor {
 					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' doesn't exist.");
 				}
 			}
+			else if (args[0].equalsIgnoreCase("set-portal")){
+				if (WorldControl.portalDestinationExists(args[2].toLowerCase())){
+					ChatUtili.sendTranslatedMessage(player, "&cPlease provide a replacement block.");
+				}
+				else {
+					ChatUtili.sendTranslatedMessage(player, "&cDestination '" + args[2] + "' does not exist.");
+				}
+			}
 			else {
 				packetHoverMessage.sendHoverMessage(player, prefix,  "&cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
 			}
@@ -220,6 +282,21 @@ public class worldControlCommand implements CommandExecutor {
 			}
 			else if (args[0].equalsIgnoreCase("whitelist")){
 				WorldControl.tooglePlayerWorldWhitelist(player, args[1], args[3]);
+			}
+			else if (args[0].equalsIgnoreCase("set-portal")){
+				try {
+					if (WorldControl.materialExists(Material.getMaterial(args[3].toUpperCase()))){
+					WorldControlHandler.portalCreationInfo.put(player, args[1].toLowerCase() + "," +  args[2].toLowerCase() + "," +  args[3].toUpperCase());
+					player.getInventory().addItem(new ItemStack(Material.STONE_HOE));
+					ChatUtili.sendTranslatedMessage(player, "&dPlease select two locations for the portal with a stone hoe.");
+					}
+					else {
+						ChatUtili.sendTranslatedMessage(player, "&cMaterial '" + args[3] + "' is invalid.");
+					}
+				}
+				catch (Exception e){
+					ChatUtili.sendTranslatedMessage(player, "Invalid replacement block.");
+				}
 			}
 			else {
 				packetHoverMessage.sendHoverMessage(player, prefix,  "&cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");

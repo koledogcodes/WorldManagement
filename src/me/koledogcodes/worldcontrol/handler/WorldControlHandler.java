@@ -5,21 +5,27 @@ import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.inventory.ItemStack;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.api.WorldControlSignType;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
+import me.koledogcodes.worldcontrol.configs.WorldPortalFile;
+import me.koledogcodes.worldcontrol.configs.WorldPortalLocationFile;
 import me.koledogcodes.worldcontrol.configs.WorldSignFile;
 import me.koledogcodes.worldcontrol.configs.WorldSpawnFile;
 import me.koledogcodes.worldcontrol.configs.WorldWhitelistFile;
@@ -41,8 +47,21 @@ public class WorldControlHandler {
 		return plugin;
 	}
 	
+	private HashMap<Player, Integer> maxX = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> maxY = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> maxZ = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> minX = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> minY = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> minZ = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> x = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> y = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> z = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> occurnaces = new HashMap<Player, Integer>();
+	private HashMap<Player, Block> block = new HashMap<Player, Block>();
 	public HashMap<Player, String> world = new HashMap<Player, String>();
 	public static HashMap<Player, Boolean> tpSuccecs = new HashMap<Player, Boolean>();
+	public static HashMap<Player, Boolean> portalTeleportInstance = new HashMap<Player, Boolean>();
+	public static HashMap<Player, String> portalCreationInfo = new HashMap<Player, String>();
 	private HashMap<String, List<String>> worldWhitelist = new HashMap<String, List<String>>();
 	
 	public void loadWorld(Player player, String world){
@@ -355,6 +374,14 @@ public class WorldControlHandler {
 		}
 	}
 	
+	public void generateConfiguration(){
+		setConfigOption("worlds-to-load-on-startup", new ArrayList<String>());
+		setConfigOption("blacklist-worlds", new ArrayList<String>());
+		setConfigOption("portal-teleport-message", "You have been teleported <player>!");
+		setConfigOption("auto-update", true);
+		setConfigOption("opt-out", true);
+	}
+	
 	public void setWorldConfigOption(Player player, String setting, Object value){
 		if (WorldConfigFile.getCustomConfig().getString(world.get(player)  + "." +  setting) == null){
 			WorldConfigFile.getCustomConfig().set(world.get(player)  + "." +  setting, value);
@@ -378,6 +405,19 @@ public class WorldControlHandler {
 		}
 		
 		worldSetting = null;
+		value = null;
+	}
+	
+	public void setConfigOption(String configSetting, Object value){
+		if (ConfigFile.getCustomConfig().getString(configSetting) == null){
+			ConfigFile.getCustomConfig().set(configSetting, value);
+			ConfigFile.saveCustomConfig();
+		}
+		else {
+			return;
+		}
+		
+		configSetting = null;
 		value = null;
 	}
 	
@@ -576,6 +616,8 @@ public class WorldControlHandler {
 				generateWorldConfiguration(worlds.get(i));
 			}
 		}
+		
+		logConsole("Configuration has been (re)generated.");
 	}
 
 	
@@ -665,6 +707,163 @@ public class WorldControlHandler {
 	
 	public Location parseStringToLocation(String loc){
 		return new Location(Bukkit.getWorld(loc.split(" ")[0]), Double.parseDouble(loc.split(" ")[1]), Double.parseDouble(loc.split(" ")[2]), Double.parseDouble(loc.split(" ")[3]));
+	}
+	
+	public boolean portalDestinationExists(String dest){
+		if (WorldPortalFile.getCustomConfig().getString("destinations." + dest) == null){
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+	
+	public boolean portalExists(String portal){
+		if (WorldPortalFile.getCustomConfig().getString("portals." + portal) == null){
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+	
+	public void setDestination(String dest, Location loc){
+		WorldPortalFile.getCustomConfig().set("destinations." + dest + ".world", loc.getWorld().getName());
+		WorldPortalFile.getCustomConfig().set("destinations." + dest + ".x", loc.getX());
+		WorldPortalFile.getCustomConfig().set("destinations." + dest + ".y", loc.getY());
+		WorldPortalFile.getCustomConfig().set("destinations." + dest + ".z", loc.getZ());
+		WorldPortalFile.getCustomConfig().set("destinations." + dest + ".pitch", loc.getPitch());
+		WorldPortalFile.getCustomConfig().set("destinations." + dest + ".yaw", loc.getYaw());
+		WorldPortalFile.saveCustomConfig();
+		logConsole(" Destination '" + dest + "' has been set at '" + parseLocationToString(loc) + "'.");
+	}
+	
+	public void createPortal(Player player, String world, String portal, String dest, Location loc1, Location loc2, Material replacementBlock){
+		occurnaces.put(player, 0);
+
+	    maxX.put(player, Math.max(loc1.getBlockX(), loc2.getBlockX()));
+	    maxY.put(player, Math.max(loc1.getBlockY(), loc2.getBlockY()));
+	    maxZ.put(player, Math.max(loc1.getBlockZ(), loc2.getBlockZ()));
+
+	    minX.put(player, Math.min(loc1.getBlockX(), loc2.getBlockX()));
+	    minY.put(player, Math.min(loc1.getBlockY(), loc2.getBlockY()));
+	    minZ.put(player, Math.min(loc1.getBlockZ(), loc2.getBlockZ()));
+
+	    if (portalExists(portal)){
+	    	deletePortal(portal);
+	    }
+	    
+		for(x.put(player, minX.get(player)); x.get(player) <= maxX.get(player); x.put(player, x.get(player) + 1)){
+			  for(y.put(player, minY.get(player)); y.get(player) <= maxY.get(player); y.put(player, y.get(player) + 1)){
+				  for(z.put(player, minZ.get(player)); z.get(player) <= maxZ.get(player); z.put(player, z.get(player) + 1)){
+					block.put(player, new Location(Bukkit.getWorld(world), x.get(player), y.get(player), z.get(player)).getBlock());
+					if (block.get(player).getType() == Material.GOLD_BLOCK){
+					occurnaces.put(player, occurnaces.get(player) + 1);
+					block.get(player).setType(replacementBlock);
+					WorldPortalLocationFile.getCustomConfig().set(parseLocationToString(block.get(player).getLocation()), portal);
+					}
+				  }
+			  }
+		  }
+		
+		WorldPortalLocationFile.saveCustomConfig();
+	    
+	    WorldPortalFile.getCustomConfig().set("portals." + portal + ".loc-1", parseLocationToString(loc1));
+	    WorldPortalFile.getCustomConfig().set("portals." + portal + ".loc-2", parseLocationToString(loc2));
+	    WorldPortalFile.getCustomConfig().set("portals." + portal + ".dest", dest);
+	    WorldPortalFile.saveCustomConfig();
+	    ChatUtili.sendTranslatedMessage(player, "&dBlock(s) Replaced: " + occurnaces.get(player));
+	    logConsole("Portal '" + portal + "' has been set with destination '" + dest + "'.");
+	}
+	
+	public void deletePortal(String portal){
+	portal = portal.toLowerCase();
+	Location loc1 = parseStringToLocation(WorldPortalFile.getCustomConfig().getString("portals." + portal + ".loc-1"));
+	Location loc2 = parseStringToLocation(WorldPortalFile.getCustomConfig().getString("portals." + portal + ".loc-2"));
+
+	//int occurnaces = 0;
+
+	int maxX =  Math.max(loc1.getBlockX(), loc2.getBlockX());
+	int maxY =  Math.max(loc1.getBlockY(), loc2.getBlockY());
+	int maxZ =  Math.max(loc1.getBlockZ(), loc2.getBlockZ());
+
+	int minX =  Math.min(loc1.getBlockX(), loc2.getBlockX());
+	int minY =  Math.min(loc1.getBlockY(), loc2.getBlockY());
+	int minZ =  Math.min(loc1.getBlockZ(), loc2.getBlockZ());
+
+	for(int x =  minX; x <= maxX; x = x + 1){
+	  for(int y =  minY; y <= maxY; y = y + 1){
+	    for(int z =  minZ; z <= maxZ; z = z + 1){
+	    	Block block =  new Location(loc1.getWorld(), x, y, z).getBlock();
+	    	//occurnaces++;
+	    	WorldPortalLocationFile.getCustomConfig().set(parseLocationToString(block.getLocation()), null);
+	    }
+      }
+	}
+	
+	WorldPortalFile.getCustomConfig().set("portals." + portal, null);
+	WorldPortalFile.saveCustomConfig();
+
+	logConsole("Portal '" + portal + "' has been deleted.");
+	}
+	
+	public void deleteDestination(String dest){
+		WorldPortalFile.getCustomConfig().set("destinations." + dest, null);
+		WorldPortalFile.saveCustomConfig();
+		logConsole("Destination '" + dest + "' has been deleted.");
+	}
+	
+	public Location getPortalDestinationLocation(String portal){
+		return getDestinationLocation(WorldPortalFile.getCustomConfig().getString("portals." + portal + ".dest"));
+	}
+	
+	public Location getDestinationLocation(String dest_name){
+		Location loc = null;
+		if (portalDestinationExists(dest_name)){
+			 loc = new Location(Bukkit.getWorld(WorldPortalFile.getCustomConfig().getString("destinations." + dest_name + ".world")), WorldPortalFile.getCustomConfig().getDouble("destinations." + dest_name + ".x"), WorldPortalFile.getCustomConfig().getDouble("destinations." + dest_name + ".y"), WorldPortalFile.getCustomConfig().getDouble("destinations." + dest_name + ".z"), (float) WorldPortalFile.getCustomConfig().getDouble("destinations." + dest_name + ".yaw"), (float) WorldPortalFile.getCustomConfig().getDouble("destinations." + dest_name + ".pitch"));
+			 return loc;
+		}
+		else {
+			logConsole("Destination '" + dest_name + "' does not exist.");
+			return loc;
+		}
+	}
+	
+	public boolean materialExists(Material material){
+		boolean valid = true;
+		try {
+			Bukkit.createInventory(null, 9, "Test").addItem(new ItemStack(material));
+			valid = true;
+		}
+		catch (Exception e){
+			valid = false;
+		}
+		return valid;
+	}
+	
+	public String getCleanPortalList(){
+		String list = "";
+		try {
+			Set<String> nodes = WorldPortalFile.getCustomConfig().getConfigurationSection("portals").getKeys(false);
+			list = nodes + "";
+			
+		}
+		catch (Exception e){
+			list = "No Portals";
+		}
+		return list;
+	}
+	
+	public String getCleanDestinationsList(){
+		String list = "";
+		try {
+		Set<String> nodes = WorldPortalFile.getCustomConfig().getConfigurationSection("destinations").getKeys(false);
+		list = nodes + "";
+		}
+		catch (Exception e){
+			list = "No Destinations";
+		}
+		return list;
 	}
 	
 	public void logConsole(String message){

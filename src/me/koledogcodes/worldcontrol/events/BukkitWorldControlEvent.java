@@ -148,7 +148,7 @@ public class BukkitWorldControlEvent implements Listener {
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(e.getTo().getWorld().getName())){
 			if (((int) WorldControl.getWorldSettingValue(e.getTo().getWorld().getName(), "player-limit")) == -1){
-				ChatUtili.sendTranslatedMessage(player, "&aSuccesfully tped to world '" + player.getWorld().getName() + "' spawn location.");	
+				//ChatUtili.sendTranslatedMessage(player, "&aSuccesfully tped to world '" + player.getWorld().getName() + "' spawn location.");	
 				return;	
 			}
 			
@@ -315,6 +315,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerInteract(PlayerInteractEvent e){
 		Player player = e.getPlayer();
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "player-interact")){
 				return;
@@ -343,6 +344,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler (priority = EventPriority.MONITOR)
 	public void onPlayerPortalTeleport(PlayerPortalEvent e){
 		Player player = e.getPlayer();
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (e.getCause().equals(TeleportCause.NETHER_PORTAL)){
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "nether-portal-teleport")){
@@ -384,7 +386,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Nether Portal Create [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerPortalCreate(PortalCreateEvent e){
 		if (WorldControl.worldContainsSettings(e.getWorld().getName())){
 			if ((boolean) WorldControl.getWorldSettingValue(e.getWorld().getName(), "nether-portal-can-create")){
@@ -436,6 +438,24 @@ public class BukkitWorldControlEvent implements Listener {
 				return;
 			}
 		}
+	}
+	
+	//TODO World Permission
+	@EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPlayerTeleportChangeWorld(PlayerTeleportEvent e){
+		Player player = e.getPlayer();
+		if (player.hasPermission("worldcontrol.override.*")){ return; }
+		if (e.getFrom().getWorld().getName().equalsIgnoreCase(e.getTo().getWorld().getName())){ return; }
+		
+			if (player.hasPermission("worldcontrol.world.*") == false){
+				if (player.hasPermission("worldcontrol.world." + e.getTo().getWorld().getName())){
+					return;
+				}
+				else {
+					e.setCancelled(true);
+					ChatUtili.sendTranslatedMessage(player, "&cYou do not have permission to go to this world.");
+				}
+			}
 	}
 	
 }
