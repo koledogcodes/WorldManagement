@@ -49,6 +49,9 @@ public class WorldControlHandler {
 	}
 	
 	private HashMap<Player, Integer> loop = new HashMap<Player, Integer>();
+	private HashMap<Player, List<String>> flagValues = new HashMap<Player, List<String>>();
+	private HashMap<Player, Integer> flagLoop = new HashMap<Player, Integer>();
+	private HashMap<Player, StringBuilder> flagStringBuilder = new HashMap<Player, StringBuilder>();
 	private HashMap<Player, List<ItemStack>> worldInventory = new HashMap<Player, List<ItemStack>>();
 	private HashMap<Player, Integer> maxX = new HashMap<Player, Integer>();
 	private HashMap<Player, Integer> maxY = new HashMap<Player, Integer>();
@@ -418,6 +421,19 @@ public class WorldControlHandler {
 	
 	public void setWorldConfigOption(String world, String worldSetting, Object value){
 		if (WorldConfigFile.getCustomConfig().getString(world  + "." +  worldSetting) == null){
+			WorldConfigFile.getCustomConfig().set(world  + "." +  worldSetting, value);
+			WorldConfigFile.saveCustomConfig();
+		}
+		else {
+			return;
+		}
+		
+		worldSetting = null;
+		value = null;
+	}
+	
+	public void overrideWorldConfigOption(String world, String worldSetting, Object value){
+		if (WorldConfigFile.getCustomConfig().getString(world  + "." +  worldSetting) != null){
 			WorldConfigFile.getCustomConfig().set(world  + "." +  worldSetting, value);
 			WorldConfigFile.saveCustomConfig();
 		}
@@ -917,6 +933,82 @@ public class WorldControlHandler {
 		player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".leggings"));
 		player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".boots"));
 		player.updateInventory();
+	}
+	
+	@SuppressWarnings({ "unchecked" })
+	public void setWorldFlag(Player player, String world, String flag, Object[] value){
+	int index = 3;	
+	if (worldContainsSettings(world) == false){
+		generateWorldConfiguration(world);
+	}
+	if (worldFlagExists(world, flag)){
+		try {
+			//Setting flag values
+			if (flag.equalsIgnoreCase("player-limit") || flag.equalsIgnoreCase("mob-limit") || flag.equalsIgnoreCase("title-join-message-main-display-time") || flag.equalsIgnoreCase("title-join-message-sub-display-time")){
+				overrideWorldConfigOption(world, flag, Integer.parseInt(value[index].toString()));
+				ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7has been set to: &e" + value[index]);
+			}
+			else if (flag.equalsIgnoreCase("certain-blocks-place-allow") || flag.equalsIgnoreCase("certain-blocks-break-allow") ||  flag.equalsIgnoreCase("certain-mob-spawn-allow") || flag.equalsIgnoreCase("certain-commands-use-allow")){
+				flagValues.put(player, ((List<String>) getWorldSettingValue(world, flag)));
+				if (flag.equalsIgnoreCase("certain-commands-use-allow") == false){
+					value[index] = value[index].toString().toUpperCase();
+				}
+				if (flagValues.get(player).contains(value[index].toString())){
+					flagValues.get(player).remove(value[index].toString());
+					overrideWorldConfigOption(world, flag, flagValues.get(player));
+					ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7value &e'" + value[index].toString() + "' &7has been removed.");
+				}
+				else {
+					flagValues.get(player).add(value[index].toString());
+					overrideWorldConfigOption(world, flag, flagValues.get(player));
+					ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7value &e'" + value[index].toString() + "' &7has been added.");
+				}
+			}
+			else if (flag.equalsIgnoreCase("fallback-world") || flag.equalsIgnoreCase("title-join-message-main") || flag.equalsIgnoreCase("title-join-message-sub") || flag.equalsIgnoreCase("default-gamemode")){
+				flagStringBuilder.put(player, new StringBuilder());
+				for(flagLoop.put(player, index); flagLoop.get(player) < value.length; flagLoop.put(player, flagLoop.get(player) + 1)){
+					flagStringBuilder.get(player).append(value[flagLoop.get(player)] + " ");
+				}
+				overrideWorldConfigOption(world, flag, flagStringBuilder.get(player));
+				ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' flag '"  + flag + "' &7has been set to: &e" + flagStringBuilder.get(player));
+			}
+			else {
+				overrideWorldConfigOption(world, flag, Boolean.parseBoolean(value[index].toString()));	
+				ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7has been set to: &e" + value[index]);
+			}
+		}
+		catch (Exception e){
+			ChatUtili.sendTranslatedMessage(player, "&cInvalid value supplied");
+		}
+	}
+	else {
+		ChatUtili.sendTranslatedMessage(player, "&cInvalid flag '" + flag + "'.");
+	}
+	}
+	
+	public boolean worldFlagExists(String world, String flag){
+		if (WorldConfigFile.getCustomConfig().getString(world + "." + flag) != null){
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	public String getWorldFlagsMessage(String world){
+		String string = "";
+		Object[] keys = WorldConfigFile.getCustomConfig().getConfigurationSection(world).getKeys(false).toArray();
+	
+		for (int i = 0; i < keys.length; i++){
+			if (i == (keys.length - 1)){
+				string += keys[i] + "&c.";
+			}
+			else {
+				string += keys[i] + "&c,&a ";
+			}
+		}
+		
+		return string;
 	}
 	
 	public void logConsole(String message){

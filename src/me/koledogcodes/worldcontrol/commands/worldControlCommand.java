@@ -49,7 +49,6 @@ public class worldControlCommand implements CommandExecutor {
 		if (args.length == 0){
 		ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc create <world> &3<world type> &3<envoirment> &3<generate structures> &3<seed>", " &b- &b(Hover)", "&aThis command simply creates a world with features.");
-		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc create <world>", " &b- &b(Hover)", "&aThis command simply creates a world.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc delete <world>", " &b- &b(Hover)", "&aThis command simply deletes a world.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc exist <world>", " &b- &b(Hover)", "&aThis command simply checks if a world exists.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc load <world>", " &b- &b(Hover)", "&aThis command simply loads exisitng worlds.");
@@ -57,6 +56,7 @@ public class worldControlCommand implements CommandExecutor {
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc tp <world>", " &b- &b(Hover)", "&aThis command teleports the player to the worlds \n &aspawn location.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc list", " &b- &b(Hover)", "&aThis command list all current worlds. \n &aAnd shows their loaded status.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc createconf <world>", " &b- &b(Hover)", "&aThis command creates a config file for the specified world.");	
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc flag <world> <option> <value>", " &b- &b(Hover)", "&aThis command allows you to edit flags for worlds. (Config option's)");	
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc reload", " &b- &b(Hover)", "&aThis command reloads the entire plugin.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc reload <world>", " &b- &b(Hover)", "&aThis command reloads a worlds config file.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc save <world>", " &b- &b(Hover)", "&aThis command saves a world to its world folder.");
@@ -134,6 +134,9 @@ public class worldControlCommand implements CommandExecutor {
 		}
 		else if (args[0].equalsIgnoreCase("dest-list")){
 			ChatUtili.sendTranslatedMessage(player, "&6Dests: &f" + WorldControl.getCleanDestinationsList());
+		}
+		else if (args[0].equalsIgnoreCase("flag")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to set flags for.");
 		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
@@ -237,6 +240,14 @@ public class worldControlCommand implements CommandExecutor {
 				ChatUtili.sendTranslatedMessage(player, "&c Failed to delete world '" + args[1] + "'.");
 			}
 		}
+		else if (args[0].equalsIgnoreCase("flag")){
+			if (WorldControl.worldFolderExists(args[1])){
+				ChatUtili.sendTranslatedMessage(player, "&cPlease provide a flag to modify for world '" + args[0] + "'.");
+			}
+			else {
+				ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+			}
+		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
 		}
@@ -289,6 +300,18 @@ public class worldControlCommand implements CommandExecutor {
 					ChatUtili.sendTranslatedMessage(player, "&cDestination '" + args[2] + "' does not exist.");
 				}
 			}
+			else if (args[0].equalsIgnoreCase("flag")){
+				if (WorldControl.worldFolderExists(args[1])){
+					if (args[2].equalsIgnoreCase("?")){
+						ChatUtili.sendTranslatedMessage(player, "&9World Flags: &a" + WorldControl.getWorldFlagsMessage(args[1]));
+					}
+					else {
+						ChatUtili.sendTranslatedMessage(player, "&cPlease provide a value.");					}
+				}
+				else {
+					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+				}
+			}
 			else {
 				packetHoverMessage.sendHoverMessage(player, prefix,  "&cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
 			}
@@ -309,17 +332,32 @@ public class worldControlCommand implements CommandExecutor {
 			}
 			else if (args[0].equalsIgnoreCase("set-portal")){
 				try {
-					if (WorldControl.materialExists(Material.getMaterial(args[3].toUpperCase()))){
-					WorldControlHandler.portalCreationInfo.put(player, args[1].toLowerCase() + "," +  args[2].toLowerCase() + "," +  args[3].toUpperCase());
-					player.getInventory().addItem(new ItemStack(Material.STONE_HOE));
-					ChatUtili.sendTranslatedMessage(player, "&dPlease select two locations for the portal with a stone hoe.");
+					if (args[0].equalsIgnoreCase("water") || args[0].equalsIgnoreCase("still_water") || args[0].equalsIgnoreCase("STATIONARY_WATER")){
+						WorldControlHandler.portalCreationInfo.put(player, args[1].toLowerCase() + "," +  args[2].toLowerCase() + "," +  Material.STATIONARY_WATER.name());
+						player.getInventory().addItem(new ItemStack(Material.STONE_HOE));
+						ChatUtili.sendTranslatedMessage(player, "&dPlease select two locations for the portal with a stone hoe.");
 					}
 					else {
-						ChatUtili.sendTranslatedMessage(player, "&cMaterial '" + args[3] + "' is invalid.");
+						if (WorldControl.materialExists(Material.getMaterial(args[3].toUpperCase()))){
+							WorldControlHandler.portalCreationInfo.put(player, args[1].toLowerCase() + "," +  args[2].toLowerCase() + "," +  args[3].toUpperCase());
+							player.getInventory().addItem(new ItemStack(Material.STONE_HOE));
+							ChatUtili.sendTranslatedMessage(player, "&dPlease select two locations for the portal with a stone hoe.");
+						}
+						else {
+								ChatUtili.sendTranslatedMessage(player, "&cMaterial '" + args[3] + "' is invalid.");
+						}
 					}
 				}
 				catch (Exception e){
 					ChatUtili.sendTranslatedMessage(player, "Invalid replacement block.");
+				}
+			}
+			else if (args[0].equalsIgnoreCase("flag")){
+				if (WorldControl.worldFolderExists(args[1])){
+					WorldControl.setWorldFlag(player, args[1], args[2], args);
+				}
+				else {
+					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
 				}
 			}
 			else {

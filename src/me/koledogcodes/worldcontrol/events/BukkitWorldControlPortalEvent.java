@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 
@@ -89,4 +90,10 @@ public class BukkitWorldControlPortalEvent implements Listener {
 		}
 	}
 	
+	//TODO Liquid Flow Out [PORTAL]
+	@EventHandler
+	public void onLiquidFlow(BlockFromToEvent e){
+		if (WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlock().getLocation())) == null){ return; }
+		e.setCancelled(true);
+	}
 }
