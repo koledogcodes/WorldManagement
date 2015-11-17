@@ -1,5 +1,7 @@
 package me.koledogcodes.worldcontrol.commands;
 
+import java.io.File;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World.Environment;
@@ -48,6 +50,7 @@ public class worldControlCommand implements CommandExecutor {
 		ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc create <world> &3<world type> &3<envoirment> &3<generate structures> &3<seed>", " &b- &b(Hover)", "&aThis command simply creates a world with features.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc create <world>", " &b- &b(Hover)", "&aThis command simply creates a world.");
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc delete <world>", " &b- &b(Hover)", "&aThis command simply deletes a world.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc exist <world>", " &b- &b(Hover)", "&aThis command simply checks if a world exists.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc load <world>", " &b- &b(Hover)", "&aThis command simply loads exisitng worlds.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc unload <world>", " &b- &b(Hover)", "&aThis command simply unloads a exisitng world.");
@@ -75,8 +78,8 @@ public class worldControlCommand implements CommandExecutor {
 		if (args[0].equalsIgnoreCase("create")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to create.");		
 		}
-		if (args[0].equalsIgnoreCase("ip")){
-			ChatUtili.sendTranslatedMessage(player, "&aServer Ip: " + Bukkit.getServer().getIp());		
+		else if (args[0].equalsIgnoreCase("delete")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to delete.");		
 		}
 		else if (args[0].equalsIgnoreCase("exist")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to check.");			
@@ -212,6 +215,27 @@ public class worldControlCommand implements CommandExecutor {
 			else {
 				ChatUtili.sendTranslatedMessage(player, "&cDestination '" + args[1].toLowerCase() + "' does not exist.");
 			}		
+		}
+		else if (args[0].equalsIgnoreCase("delete")){
+			if (player.getWorld().getName().equalsIgnoreCase(args[1])){
+				ChatUtili.sendTranslatedMessage(player, "&cYou cannot delete a world you are currently in.");
+			}
+			
+			if (WorldControl.worldFolderExists(args[1]) == false){
+				ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' doesnt exist.");
+				return true;
+			}
+			ChatUtili.sendTranslatedMessage(player, "&aDeleting world '" + args[1] + "'.");
+			File file = new File(args[1]);
+			if (WorldControl.worldExists(args[1])){
+				WorldControl.unloadWorld(null, args[1], false);
+			}
+			if (WorldControl.deleteWorld(args[1], file)){
+				ChatUtili.sendTranslatedMessage(player, "&aWorld '" + args[1] + "' has been deleted.");
+			}
+			else {
+				ChatUtili.sendTranslatedMessage(player, "&c Failed to delete world '" + args[1] + "'.");
+			}
 		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");

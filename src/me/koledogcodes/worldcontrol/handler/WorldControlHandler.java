@@ -23,6 +23,7 @@ import org.bukkit.inventory.ItemStack;
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.api.WorldControlSignType;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
+import me.koledogcodes.worldcontrol.configs.PlayerDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldPortalFile;
 import me.koledogcodes.worldcontrol.configs.WorldPortalLocationFile;
@@ -47,6 +48,8 @@ public class WorldControlHandler {
 		return plugin;
 	}
 	
+	private HashMap<Player, Integer> loop = new HashMap<Player, Integer>();
+	private HashMap<Player, List<ItemStack>> worldInventory = new HashMap<Player, List<ItemStack>>();
 	private HashMap<Player, Integer> maxX = new HashMap<Player, Integer>();
 	private HashMap<Player, Integer> maxY = new HashMap<Player, Integer>();
 	private HashMap<Player, Integer> maxZ = new HashMap<Player, Integer>();
@@ -63,6 +66,21 @@ public class WorldControlHandler {
 	public static HashMap<Player, Boolean> portalTeleportInstance = new HashMap<Player, Boolean>();
 	public static HashMap<Player, String> portalCreationInfo = new HashMap<Player, String>();
 	private HashMap<String, List<String>> worldWhitelist = new HashMap<String, List<String>>();
+	private HashMap<Player, PlayerDataFile> playerDataFile = new HashMap<Player, PlayerDataFile>();
+	
+	public boolean deleteWorld(String world, File path) {
+	      if(path.exists()) {
+	          File files[] = path.listFiles();
+	          for(int i=0; i<files.length; i++) {
+	              if(files[i].isDirectory()) {
+	                  deleteWorld(world, files[i]);
+	              } else {
+	                  files[i].delete();
+	              }
+	          }
+	      }
+	      return(path.delete());
+	}
 	
 	public void loadWorld(Player player, String world){
 		if (worldFolderExists(world)){
@@ -322,6 +340,7 @@ public class WorldControlHandler {
 					setWorldConfigOption(player, "title-join-message-main-display-time", 5);
 					setWorldConfigOption(player, "title-join-message-sub", "<world-online>/<world-online-max>");
 					setWorldConfigOption(player, "title-join-message-sub-display-time", 5);
+					setWorldConfigOption(player, "default-gamemode", "survival");
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 				ChatUtili.sendTranslatedMessage(player, "&aGenerated config for world '" + world.get(player) + "'.");
@@ -368,6 +387,7 @@ public class WorldControlHandler {
 					setWorldConfigOption(world, "title-join-message-main-display-time", 5);
 					setWorldConfigOption(world, "title-join-message-sub", "<world-online>/<world-online-max>");
 					setWorldConfigOption(world, "title-join-message-sub-display-time", 5);
+					setWorldConfigOption(world, "default-gamemode", "survival");
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 			}
@@ -380,6 +400,7 @@ public class WorldControlHandler {
 		setConfigOption("portal-teleport-message", "You have been teleported <player>!");
 		setConfigOption("auto-update", true);
 		setConfigOption("opt-out", true);
+		setConfigOption("inventory-per-world", false);
 	}
 	
 	public void setWorldConfigOption(Player player, String setting, Object value){
@@ -864,6 +885,38 @@ public class WorldControlHandler {
 			list = "No Destinations";
 		}
 		return list;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void setCurrentWorldInventory(Player player){
+		playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
+		worldInventory.put(player, (List<ItemStack>) playerDataFile.get(player).getConfig().getList(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".inventory"));
+		
+		for (loop.put(player, 0); loop.get(player) < worldInventory.get(player).size(); loop.put(player, loop.get(player) + 1)){
+				player.getInventory().setItem(loop.get(player), worldInventory.get(player).get(loop.get(player)));
+		}
+		
+		player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".helm"));
+		player.getInventory().setChestplate(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".chestplate"));
+		player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".leggings"));
+		player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".boots"));
+		player.updateInventory();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void setWorldInventory(Player player, String world){
+		playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
+		worldInventory.put(player, (List<ItemStack>) playerDataFile.get(player).getConfig().getList(player.getUniqueId().toString() + "." + world + ".inventory"));
+		
+		for (loop.put(player, 0); loop.get(player) < worldInventory.get(player).size(); loop.put(player, loop.get(player) + 1)){
+				player.getInventory().setItem(loop.get(player), worldInventory.get(player).get(loop.get(player)));
+		}
+		
+		player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".helm"));
+		player.getInventory().setChestplate(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".chestplate"));
+		player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".leggings"));
+		player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".boots"));
+		player.updateInventory();
 	}
 	
 	public void logConsole(String message){

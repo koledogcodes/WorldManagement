@@ -19,11 +19,12 @@ public class ConfigFile {
 	
 	private static FileConfiguration customConfig = null;
 	private static File customConfigFile = null;
+	
 	public static void reloadCustomConfig(){
-		
 	if (customConfigFile == null) {
 	customConfigFile = new File(plugin.getDataFolder(), "config.yml"); 
 	}
+	
 	customConfig = YamlConfiguration.loadConfiguration(customConfigFile);
 	 
 	InputStream defConfigStream = plugin.getResource("config.yml");

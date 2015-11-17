@@ -53,6 +53,8 @@ public class WorldControl extends JavaPlugin {
 				file.mkdirs();
 			file = new File(getDataFolder() + "/Spawns");
 				file.mkdirs();
+				file = new File(getDataFolder() + "/Userdata");
+				file.mkdirs();
 		} 
 		catch (IOException e) {
 			
@@ -75,6 +77,7 @@ public class WorldControl extends JavaPlugin {
 		
 		saveDefaultConfig();
 		reloadConfig();
+		ConfigFile.reloadCustomConfig();
 		WorldConfigFile.reloadCustomConfig();
 		WorldWhitelistFile.reloadCustomConfig();
 		WorldSpawnFile.reloadCustomConfig();
