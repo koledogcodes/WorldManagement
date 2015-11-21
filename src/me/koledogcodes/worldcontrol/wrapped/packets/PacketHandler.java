@@ -1,6 +1,7 @@
 package me.koledogcodes.worldcontrol.wrapped.packets;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 public class PacketHandler {
@@ -8,11 +9,22 @@ public class PacketHandler {
 	/* Send UnHashed Packet */
 	public static void sendPacket(Player player, Object packet){
 	try {
-		Object handle = player.getClass().getMethod("getHandle").invoke(player);
-		Object playerConnection = handle.getClass().getField("playerConnection").get(handle);
-		playerConnection.getClass().getMethod("sendPacket", getNMSClass("Packet")).invoke(playerConnection, packet);
+		if (getBukkitVersion().contains("v1_8")){
+			Object handle = player.getClass().getMethod("getHandle").invoke(player);
+			Object playerConnection = handle.getClass().getField("playerConnection").get(handle);
+			playerConnection.getClass().getMethod("sendPacket", getNMSClass("Packet")).invoke(playerConnection, packet);
+		}
+		else if (getBukkitVersion().contains("v1_7")){
+			Object handle = player.getClass().getMethod("getHandle").invoke(player);
+			Object playerConnection = handle.getClass().getField("playerConnection").get(handle);
+			playerConnection.getClass().getMethod("sendPacket", getNMSClass("Packet")).invoke(playerConnection, packet);
+		}
+		else {
+			player.sendMessage(ChatColor.RED + "Cannot use packets with invalid version.");
+		}
 	} 
 	catch (Exception e){
+		player.sendMessage(ChatColor.RED + "Packet failed to send.");
 		e.printStackTrace();
 	}	
 	}

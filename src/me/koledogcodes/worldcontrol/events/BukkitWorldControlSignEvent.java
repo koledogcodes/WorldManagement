@@ -107,15 +107,20 @@ public class BukkitWorldControlSignEvent implements Listener {
 	//TODO WorldControl Unload World
 	@EventHandler
 	public void wcUnloadWorld(WorldControlUnloadWorldEvent e){
-		List<String> signs = WorldControl.getAllWorldControlSignLoc();
-		for (int i = 0; i < signs.size(); i++){
-			if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
-				Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
-				if (ChatColor.stripColor(s.getLine(1)).equalsIgnoreCase(e.getUnloadedWorldName()) && WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("STATUS")){
-					s.setLine(2, WorldControl.colorTranslate("&c(Not Loaded)"));
-					s.update();
+		try {
+			List<String> signs = WorldControl.getAllWorldControlSignLoc();
+			for (int i = 0; i < signs.size(); i++){
+				if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
+					Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
+					if (ChatColor.stripColor(s.getLine(1)).equalsIgnoreCase(e.getUnloadedWorldName()) && WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("STATUS")){
+						s.setLine(2, WorldControl.colorTranslate("&c(Not Loaded)"));
+						s.update();
+					}
 				}
 			}
+		}
+		catch (Exception exc){
+			WorldControl.logConsole("Error: Updating worldcontrol signs.");
 		}
 	}
 	

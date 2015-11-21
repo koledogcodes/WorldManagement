@@ -30,6 +30,10 @@ public class ChatUtili {
 	}
 	}
 	
+	public static String colorConvert(String string){
+		return ChatColor.translateAlternateColorCodes('&', string);
+	}
+	
 	/**
 	 * Sends a broadcast message, supports color codes.
 	 * @param message - Message to be broadcasted

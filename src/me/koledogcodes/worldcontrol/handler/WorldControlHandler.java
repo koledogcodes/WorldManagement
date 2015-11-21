@@ -22,6 +22,7 @@ import org.bukkit.inventory.ItemStack;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.api.WorldControlSignType;
+import me.koledogcodes.worldcontrol.configs.BlockDataFile;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.PlayerDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
@@ -48,8 +49,16 @@ public class WorldControlHandler {
 		return plugin;
 	}
 	
+	private HashMap<Player, Long> time = new HashMap<Player, Long>();
+	private HashMap<Player, Long> day = new HashMap<Player, Long>();
+	private HashMap<Player, Long> hour = new HashMap<Player, Long>();
+	private HashMap<Player, Long> min = new HashMap<Player, Long>();
+	private HashMap<Player, Long> secs = new HashMap<Player, Long>();
 	private HashMap<Player, Integer> loop = new HashMap<Player, Integer>();
+	private HashMap<Player, String> mSecs = new HashMap<Player, String>();
+	private HashMap<Player, Integer> blockDataLoop = new HashMap<Player, Integer>();
 	private HashMap<Player, List<String>> flagValues = new HashMap<Player, List<String>>();
+	private HashMap<Player, List<String>> blockDataList = new HashMap<Player, List<String>>();
 	private HashMap<Player, Integer> flagLoop = new HashMap<Player, Integer>();
 	private HashMap<Player, StringBuilder> flagStringBuilder = new HashMap<Player, StringBuilder>();
 	private HashMap<Player, List<ItemStack>> worldInventory = new HashMap<Player, List<ItemStack>>();
@@ -65,6 +74,9 @@ public class WorldControlHandler {
 	private HashMap<Player, Integer> occurnaces = new HashMap<Player, Integer>();
 	private HashMap<Player, Block> block = new HashMap<Player, Block>();
 	public HashMap<Player, String> world = new HashMap<Player, String>();
+	public static HashMap<Player, Location> blockInspectionLocation = new HashMap<Player, Location>();
+	public static HashMap<Player, String> blockInspectionLocationType = new HashMap<Player, String>();
+	public static HashMap<Player, Boolean> blockInspection = new HashMap<Player, Boolean>();
 	public static HashMap<Player, Boolean> tpSuccecs = new HashMap<Player, Boolean>();
 	public static HashMap<Player, Boolean> portalTeleportInstance = new HashMap<Player, Boolean>();
 	public static HashMap<Player, String> portalCreationInfo = new HashMap<Player, String>();
@@ -973,6 +985,10 @@ public class WorldControlHandler {
 				ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' flag '"  + flag + "' &7has been set to: &e" + flagStringBuilder.get(player));
 			}
 			else {
+				if (value[index].toString().equalsIgnoreCase("true") == false && value[index].toString().equalsIgnoreCase("false") == false){
+					ChatUtili.sendTranslatedMessage(player, "&cOnly true/false values.");
+					return;
+				}
 				overrideWorldConfigOption(world, flag, Boolean.parseBoolean(value[index].toString()));	
 				ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7has been set to: &e" + value[index]);
 			}
@@ -1009,6 +1025,148 @@ public class WorldControlHandler {
 		}
 		
 		return string;
+	}
+	
+	public boolean isInspector(Player player){
+		if (blockInspection.containsKey(player) == false){
+			return false;
+		}
+		else {
+			if (blockInspection.get(player)){
+				return true;
+			}
+			else {
+				return false;
+			}
+		}
+	}
+	
+	private String getBlockTime(Player player, HashMap<Player, Long> time){
+		day.put(player, (long) 0);
+		hour.put(player, (long) 0); 
+		min.put(player, (long) 0); 
+		secs.put(player, (long) 0); 
+		
+		//Hour
+		if (time.get(player) > ((1000 * 60) * 60)){
+			hour.put(player, time.get(player) / ((1000 * 60) * 60) % 24);
+			time.put(player, time.get(player) - hour.get(player));
+		}
+		
+		//mins
+		if (time.get(player) > (1000 * 60)){
+			min.put(player, time.get(player) / (1000 * 60) % 60);
+			time.put(player, time.get(player) - min.get(player));
+		}
+		
+		//sec
+		if (time.get(player) > 1000){
+			secs.put(player, time.get(player) / 1000 % 60);
+			time.put(player, time.get(player) - secs.get(player));
+		}
+		
+		mSecs.put(player, "(Invalid Time)");
+		
+		if (hour.get(player) != 0){
+			mSecs.put(player, hour.get(player) + " hr(s)");
+			return mSecs.get(player);
+		}
+		
+		if (min.get(player) != 0){
+			mSecs.put(player, min.get(player) + " min(s)");			
+			return mSecs.get(player);
+		}
+		
+		if (secs.get(player) != 0){
+			mSecs.put(player, secs.get(player) + " sec(s)");			
+			return mSecs.get(player);
+		}
+		
+		return mSecs.get(player);
+	}
+	
+	public void messagePlacedBlockInformation(Player player, Block block, int page){
+		if (BlockDataFile.getCustomConfig().getString(parseLocationToString(block.getLocation()) + ".placed") == null){
+			ChatUtili.sendTranslatedMessage(player, "&fNo block information for that location.");
+			return;
+		}
+		
+		player.sendMessage(ChatUtili.colorConvert("&7----- &6WorldInspect &7----- &c(" + parseLocationToString(block.getLocation()) + ")"));
+		blockDataList.put(player, BlockDataFile.getCustomConfig().getStringList(parseLocationToString(block.getLocation()) + ".placed"));
+		
+		if (page > ((int) Math.round(blockDataList.get(player).size() / 5))){
+			ChatUtili.sendTranslatedMessage(player, "&cInvalid page.");
+			player.sendMessage(ChatUtili.colorConvert("&7---------- "));
+			return;
+		}
+		
+		if (page == ((int) Math.round(blockDataList.get(player).size() / 5))){
+			for (blockDataLoop.put(player, ((page * 5) - 5)); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
+				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fplaced &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+			}
+				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.round(blockDataList.get(player).size() / 5))));
+				player.sendMessage(ChatUtili.colorConvert("&7---------- "));
+			return;
+		}
+		
+		if (blockDataList.get(player).size() > 5){
+			for (blockDataLoop.put(player, ((page * 5) - 5)); blockDataLoop.get(player) < ((page * 5) - 0); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
+				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fplaced &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+			}
+				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.round(blockDataList.get(player).size() / 5))));		
+		}
+		else {
+			for (blockDataLoop.put(player, 0); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
+				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fplaced &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+				}
+				player.sendMessage(ChatUtili.colorConvert("&fPage 1/1"));
+		}
+		player.sendMessage(ChatUtili.colorConvert("&7---------- "));
+	}
+	
+	public void messageBrokenBlockInformation(Player player, Block block, int page){
+		if (BlockDataFile.getCustomConfig().getString(parseLocationToString(block.getLocation()) + ".broken") == null){
+			ChatUtili.sendTranslatedMessage(player, "&fNo block information for that location.");
+			return;
+		}
+		
+		player.sendMessage(ChatUtili.colorConvert("&7----- &6WorldInspect &7----- &c(" + parseLocationToString(block.getLocation()) + ")"));
+		blockDataList.put(player, BlockDataFile.getCustomConfig().getStringList(parseLocationToString(block.getLocation()) + ".broken"));
+		
+		if (page > ((int) Math.round(blockDataList.get(player).size() / 5))){
+			ChatUtili.sendTranslatedMessage(player, "&cInvalid page.");
+			player.sendMessage(ChatUtili.colorConvert("&7---------- "));
+			return;
+		}
+		
+		if (page == ((int) Math.round(blockDataList.get(player).size() / 5))){
+			for (blockDataLoop.put(player, ((page * 5) - 5)); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
+				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fremoved &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+			}
+				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.round(blockDataList.get(player).size() / 5))));
+				player.sendMessage(ChatUtili.colorConvert("&7---------- "));
+			return;
+		}
+		
+		if (blockDataList.get(player).size() > 5){
+			for (blockDataLoop.put(player, ((page * 5) - 5)); blockDataLoop.get(player) < ((page * 5) - 0); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
+				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fremoved &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+				}
+				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.round(blockDataList.get(player).size() / 5))));
+		}
+		else {
+			for (blockDataLoop.put(player, 0); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
+				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fremoved &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+				}
+				player.sendMessage(ChatUtili.colorConvert("&fPage 1/1"));
+		}
+		player.sendMessage(ChatUtili.colorConvert("&7---------- "));
 	}
 	
 	public void logConsole(String message){

@@ -108,7 +108,13 @@ public class BukkitWorldControlEvent implements Listener {
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "build")){
-				  return;
+				  if (blacklist.contains("-" + e.getBlock().getTypeId()) || blacklist.contains("-" + e.getBlock().getType().name())){
+					  ChatUtili.sendTranslatedMessage(player, "&cYou cannot place block '&4" + e.getBlock().getType().name() + "&c' in this world.");
+					  e.setCancelled(true);
+				  }
+				  else {
+					  return;
+				  }
 			  }
 			  else {
 				  if (blacklist.contains(e.getBlock().getTypeId()) || blacklist.contains(e.getBlock().getType().name())){
@@ -131,7 +137,13 @@ public class BukkitWorldControlEvent implements Listener {
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "build")){
-				  return;
+				  if (blacklist.contains("-" + e.getBlock().getTypeId()) || blacklist.contains("-" + e.getBlock().getType().name())){
+					  ChatUtili.sendTranslatedMessage(player, "&cYou cannot place block '&4" + e.getBlock().getType().name() + "&c' in this world.");
+					  e.setCancelled(true);
+				  }
+				  else {
+					  return;
+				  }
 			  }
 			  else {
 				  if (blacklist.contains(e.getBlock().getTypeId()) || blacklist.contains(e.getBlock().getType().name())){
@@ -165,7 +177,12 @@ public class BukkitWorldControlEvent implements Listener {
 	public void onMobSpawn(CreatureSpawnEvent e){
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn")){
-				  return;  
+				  if (((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "certain-mob-spawn-allow")).contains("-" + e.getEntity().getType().getTypeId()) || ((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "certain-mob-spawn-allow")).contains("-" + e.getEntity().getType().name())){
+					  e.setCancelled(true); 
+				  }
+				  else {
+					  return;
+				  } 
 			  }
 			  else {
 				  if (((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "certain-mob-spawn-allow")).contains(e.getEntity().getType().getTypeId()) || ((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "certain-mob-spawn-allow")).contains(e.getEntity().getType().name())){
@@ -235,7 +252,13 @@ public class BukkitWorldControlEvent implements Listener {
 		
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 		  if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "commands-allowed")){
-			  return;
+				if (((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "certain-commands-use-allow")).contains("-" + e.getMessage().replace("/", "").split(" ")[0])){
+					e.setCancelled(true);
+					ChatUtili.sendTranslatedMessage(player, "&cYou cannot use &4" + e.getMessage() + " &cin this world.");
+				}
+				else {
+					return;
+				}
 		  }
 		  else {
 			if (((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "certain-commands-use-allow")).contains(e.getMessage().replace("/", "").split(" ")[0])){
@@ -275,7 +298,7 @@ public class BukkitWorldControlEvent implements Listener {
 			if (e.getEntity() instanceof Player){
 				if (e.getEntity().hasPermission("worldcontrol.override.*")){ return; }
 				if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "players-drop-loot")){
-					return;
+					
 				}
 				else {
 					e.getDrops().clear();
@@ -290,7 +313,7 @@ public class BukkitWorldControlEvent implements Listener {
 			}
 			else {
 				if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mobs-drop-loot")){
-					return;
+					
 				}
 				else {
 					e.getDrops().clear();

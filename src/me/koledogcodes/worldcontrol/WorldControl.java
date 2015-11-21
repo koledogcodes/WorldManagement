@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.Metrics;
 
 import me.koledogcodes.worldcontrol.commands.worldControlCommand;
+import me.koledogcodes.worldcontrol.configs.BlockDataFile;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldPortalFile;
@@ -16,6 +17,7 @@ import me.koledogcodes.worldcontrol.configs.WorldSignFile;
 import me.koledogcodes.worldcontrol.configs.WorldSpawnFile;
 import me.koledogcodes.worldcontrol.configs.WorldWhitelistFile;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlEvent;
+import me.koledogcodes.worldcontrol.events.BukkitWorldControlLogEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlPortalEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlSignEvent;
 import me.koledogcodes.worldcontrol.handler.BlockVector;
@@ -36,7 +38,7 @@ public class WorldControl extends JavaPlugin {
 		try {
 			Updater updater = null;
 			if (getConfig().getBoolean("auto-update")){
-				updater = new Updater(this, 95788, getFile(), UpdateType.NO_VERSION_CHECK, false);
+				updater = new Updater(this, 95788, getFile(), UpdateType.DEFAULT, false);
 			}
 			else {
 				updater = new Updater(this, 95788, getFile(), UpdateType.NO_DOWNLOAD, true);
@@ -74,6 +76,7 @@ public class WorldControl extends JavaPlugin {
 		new WorldPortalFile (this);
 		new WorldPortalLocationFile (this);
 		new BlockVector();
+		new BlockDataFile (this);
 		
 		saveDefaultConfig();
 		reloadConfig();
@@ -84,10 +87,12 @@ public class WorldControl extends JavaPlugin {
 		WorldSignFile.reloadCustomConfig();
 		WorldPortalFile.reloadCustomConfig();
 		WorldPortalLocationFile.reloadCustomConfig();
+		BlockDataFile.reloadCustomConfig();
 		
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlSignEvent (this), this);
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlPortalEvent (this), this);
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlEvent (this), this);
+		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlLogEvent (this), this);
 		
 		getCommand("worldcontrol").setExecutor(new worldControlCommand (this));
 		
@@ -104,7 +109,10 @@ public class WorldControl extends JavaPlugin {
 	}
 	
 	public void onDisable(){
-		
+		getLogger().info("Saving block data..");
+		BlockDataFile.saveCustomConfig();
+		BlockDataFile.reloadCustomConfig();
+		getLogger().info("Block data has been saved.");
 	}
 	
 	public void reloadWorldControlPlugin(){
