@@ -13,6 +13,8 @@ import org.bukkit.event.player.PlayerInteractEvent;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.configs.BlockDataFile;
+import me.koledogcodes.worldcontrol.configs.ConfigFile;
+import me.koledogcodes.worldcontrol.handler.ChatUtili;
 import me.koledogcodes.worldcontrol.handler.WorldControlHandler;
 
 public class BukkitWorldControlLogEvent implements Listener {
@@ -29,6 +31,7 @@ public class BukkitWorldControlLogEvent implements Listener {
 	public void onPlayerPlaceBlockLog(BlockPlaceEvent e){
 		Player player = e.getPlayer();
 		if (e.canBuild() == false){ return; }
+		if (ConfigFile.getCustomConfig().getBoolean("block-logging") == false){ return; }
 		if (BlockDataFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation())) == null){
 			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation()) + ".placed"));
 			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlockPlaced().getType().name());
@@ -45,6 +48,7 @@ public class BukkitWorldControlLogEvent implements Listener {
 	@EventHandler
 	public void onPlayerBreakBlockLog(BlockBreakEvent e){
 		Player player = e.getPlayer();
+		if (ConfigFile.getCustomConfig().getBoolean("block-logging") == false){ return; }
 		if (BlockDataFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlock().getLocation())) == null){
 			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlock().getLocation()) + ".broken"));
 			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlock().getType().name());
@@ -62,6 +66,10 @@ public class BukkitWorldControlLogEvent implements Listener {
 	public void onPlayerClickLoggedBlock(PlayerInteractEvent e){
 		Player player = e.getPlayer();
 		if (WorldControl.isInspector(player) == false){ return; }
+		if (ConfigFile.getCustomConfig().getBoolean("block-logging") == false){ 
+		ChatUtili.sendTranslatedMessage(player, "&cPlease enable 'block-logging' to use block inspection.");	
+			return; 
+		}
 		
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK){
 		WorldControlHandler.blockInspectionLocation.put(player, e.getClickedBlock().getLocation());

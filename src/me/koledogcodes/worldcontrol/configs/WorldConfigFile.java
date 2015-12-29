@@ -1,10 +1,7 @@
 package me.koledogcodes.worldcontrol.configs;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.logging.Level;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -15,57 +12,53 @@ public class WorldConfigFile {
 	
 	//Instance
 	static WorldControl plugin;
+	private static File file;
+	private static FileConfiguration customConfig = null;
+	
 	public WorldConfigFile(WorldControl i){
 	plugin = i;
+	final String PLUGIN_NAME = plugin.getName();
+	
+	file = new File("plugins/" + PLUGIN_NAME + "/Worlds", "Worlds.yml");
+
+	if (!file.exists()){
+		try {
+			file.createNewFile();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	}
 	
-	private static FileConfiguration customConfig = null;
-	private static File customConfigFile = null;
-	private static InputStream defConfigStream;
+	public static FileConfiguration getCustomConfig(){
+		if (customConfig == null) {
+			reloadCustomConfig(); 
+		}
+		return customConfig;
+	}
+	
+	public static void saveCustomConfig(){
+		try {
+			getCustomConfig().save(file);
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
 	public static void reloadCustomConfig(){
+		if (file.exists() == false){
+			try {
+				file.createNewFile();
+			}
+			catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
+		customConfig = YamlConfiguration.loadConfiguration(file);
 		
-	if (customConfigFile == null) {
-	customConfigFile = new File(plugin.getDataFolder() + "/Worlds", "Worlds.yml"); 
-	}
-	customConfig = YamlConfiguration.loadConfiguration(customConfigFile);
-	 
-	 defConfigStream = plugin.getResource("Worlds.yml");
-	if (defConfigStream != null) {
-	@SuppressWarnings("deprecation")
-	YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(defConfigStream);
-	customConfig.setDefaults(defConfig);
-	}
-	}
-	 
-	public static FileConfiguration getCustomConfig() {
-	if (customConfig == null) {
-	reloadCustomConfig(); 
-	}
-	return customConfig;
-	}
-	 
-	public static void saveCustomConfig() {
-	if (customConfig == null || customConfigFile == null) {
-	return;
-	}
-	try {
-	try {
-		getCustomConfig().save(customConfigFile);
-		if (defConfigStream != null){
-			defConfigStream.close();
-		}
-	}
-	catch (FileNotFoundException exc){
-		if (defConfigStream != null){
-			defConfigStream.close();
-		}
-	}
-	if (defConfigStream != null){
-		defConfigStream.close();
-	}
-	} catch (IOException ex) {
-	plugin.getLogger().log(Level.SEVERE, "Could not save config to " + customConfigFile, ex);
-	}
 	}
 	 
 }

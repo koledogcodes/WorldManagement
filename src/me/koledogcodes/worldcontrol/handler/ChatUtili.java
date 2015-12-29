@@ -12,11 +12,6 @@ public class ChatUtili {
 	
 	public static String messagePrefix = "&8[&aWorldControl&8]";
 	
-	/**
-	 * Sends a player a message with color codes auto translated.
-	 * @param player - Player to send message to
-	 * @param message - Message to be sent to player
-	 */
 	public static void sendTranslatedMessage(CommandSender player, String message){
 	if (messagePrefix != null){
 		if (player != null){
@@ -28,6 +23,12 @@ public class ChatUtili {
 		player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
 		}
 	}
+	}
+	
+	public static void sendSimpleTranslatedMessage(CommandSender player, String message){
+		if (player != null){
+			player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+		}
 	}
 	
 	public static String colorConvert(String string){

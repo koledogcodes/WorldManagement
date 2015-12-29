@@ -12,7 +12,6 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -24,6 +23,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
@@ -53,7 +53,7 @@ public class BukkitWorldControlEvent implements Listener {
 	//private HashMap<Player, List<ItemStack>> worldInventory = new HashMap<Player, List<ItemStack>>();
 	
 	//TODO Setup Player DataFile [CONFIGURATION]
-	@EventHandler (priority = EventPriority.HIGH, ignoreCancelled = true)
+	@EventHandler 
 	public void onPlayerJoinGameSetFile(PlayerJoinEvent e){
 		Player player = e.getPlayer();
 		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world") == false){ return; }
@@ -63,8 +63,9 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Save Player File, Set Player Inventory [CONFIGURATION]
-	@EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onPlayerChangeWorldSaveInv(PlayerChangedWorldEvent e){
+	@EventHandler 
+	public void onPlayerChangeModeSaveInv(PlayerGameModeChangeEvent e){
+		try {
 		Player player = e.getPlayer();
 		
 		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world") == false){ return; }
@@ -73,21 +74,65 @@ public class BukkitWorldControlEvent implements Listener {
 			playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
 		}
 		
-		playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".inventory", player.getInventory().getContents());
-		playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".helm", player.getInventory().getHelmet());
-		playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".chestplate", player.getInventory().getChestplate());
-		playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".leggings", player.getInventory().getLeggings());
-		playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".boots", player.getInventory().getBoots());
-		playerDataFile.get(player).saveConfig();
+		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world-per-gamemode")){
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".inventory", player.getInventory().getContents());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".helm", player.getInventory().getHelmet());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".chestplate", player.getInventory().getChestplate());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".leggings", player.getInventory().getLeggings());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".boots", player.getInventory().getBoots());
+			playerDataFile.get(player).saveConfig();
+			
+			WorldControl.setCurrentWorldInventory(player, e.getNewGameMode());
+		}
+	}
+	catch (Exception exc){
 		
-		WorldControl.setCurrentWorldInventory(player);
+	}
+	}
+	
+	//TODO Save Player File, Set Player Inventory [CONFIGURATION]
+	@EventHandler 
+	public void onPlayerChangeWorldSaveInv(PlayerChangedWorldEvent e){
+		try {
+		Player player = e.getPlayer();
+		
+		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world") == false){ return; }
+		
+		if (playerDataFile.containsKey(player) == false){
+			playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
+		}
+		
+		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world-per-gamemode")){
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".inventory", player.getInventory().getContents());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".helm", player.getInventory().getHelmet());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".chestplate", player.getInventory().getChestplate());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".leggings", player.getInventory().getLeggings());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".boots", player.getInventory().getBoots());
+			playerDataFile.get(player).saveConfig();
+			
+			WorldControl.setCurrentWorldInventory(player, player.getGameMode());
+		}
+		else {
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.inventory", player.getInventory().getContents());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.helm", player.getInventory().getHelmet());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.chestplate", player.getInventory().getChestplate());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.leggings", player.getInventory().getLeggings());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.boots", player.getInventory().getBoots());
+			playerDataFile.get(player).saveConfig();
+			
+			WorldControl.setCurrentWorldInventory(player, null);
+		}
+	}
+	catch (Exception exc){
+		
+	}
 	}
 	
 	//TODO PvP [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerPVP(EntityDamageByEntityEvent e){
 	  if (e.getEntity() instanceof Player && e.getDamager() instanceof Player){
-		if (e.getEntity().hasPermission("worldcontrol.override.*")){ return; }
+		if (((Player) e.getEntity()).hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 		  if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "pvp")){
 			  return;
@@ -101,7 +146,7 @@ public class BukkitWorldControlEvent implements Listener {
 	
 	//TODO Build [SETTING]
 	@SuppressWarnings({ "unchecked", "deprecation" })
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerBlockPlace(BlockPlaceEvent e){
 		Player player = e.getPlayer();
 		List<Object> blacklist = (List<Object>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "certain-blocks-place-allow");
@@ -130,7 +175,7 @@ public class BukkitWorldControlEvent implements Listener {
 	
 	//TODO Build [SETTING] (2)
 	@SuppressWarnings({ "unchecked", "deprecation" })
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerBlockBreak(BlockBreakEvent e){
 		Player player = e.getPlayer();
 		List<Object> blacklist = (List<Object>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "certain-blocks-break-allow");
@@ -158,7 +203,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Weather Locked [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onWeatherChange(WeatherChangeEvent e){
 		if (WorldControl.worldContainsSettings(e.getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(e.getWorld().getName(), "weather-locked")){
@@ -173,7 +218,7 @@ public class BukkitWorldControlEvent implements Listener {
 	
 	//TODO Mob Spawn [SETIING]
 	@SuppressWarnings({ "unchecked", "deprecation" })
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onMobSpawn(CreatureSpawnEvent e){
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn")){
@@ -196,19 +241,17 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Player Limit [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerTeleport(PlayerTeleportEvent e){
 		Player player = e.getPlayer();
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(e.getTo().getWorld().getName())){
 			if (((int) WorldControl.getWorldSettingValue(e.getTo().getWorld().getName(), "player-limit")) == -1){
-				//ChatUtili.sendTranslatedMessage(player, "&aSuccesfully tped to world '" + player.getWorld().getName() + "' spawn location.");	
 				return;	
 			}
 			
 			if ((e.getTo().getWorld().getPlayers().size() + 1) > ((int) WorldControl.getWorldSettingValue(e.getTo().getWorld().getName(), "player-limit"))){
 				ChatUtili.sendTranslatedMessage(player, "&cYou cannot teleport to world '" + e.getTo().getWorld().getName() + "' becuase it has reached its player limit.");
-				e.setTo(e.getFrom());
 				e.setCancelled(true);
 				return;
 			}
@@ -224,7 +267,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Player Limit [SETTING] (2)
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerJoin(PlayerJoinEvent e){
 		Player player = e.getPlayer();
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
@@ -242,7 +285,7 @@ public class BukkitWorldControlEvent implements Listener {
 	
 	//TODO Player Command [SETTING]
 	@SuppressWarnings("unchecked")
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerEnterCommand(PlayerCommandPreprocessEvent e){
 		Player player = e.getPlayer();
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
@@ -273,12 +316,12 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Invincible [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerDamage(EntityDamageEvent e){
-		if (e.getEntity().hasPermission("worldcontrol.override.*")){ return; }
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 			if (e.getEntity() instanceof Player){
 				Player player = (Player) e.getEntity();
+				if (player.hasPermission("worldcontrol.override.*")){ return; }
 				if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "players-invincible")){
 					e.setCancelled(true);
 				}
@@ -292,11 +335,11 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Entity Death [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onEntityDeath(EntityDeathEvent e){
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 			if (e.getEntity() instanceof Player){
-				if (e.getEntity().hasPermission("worldcontrol.override.*")){ return; }
+				if (((Player) e.getEntity()).hasPermission("worldcontrol.override.*")){ return; }
 				if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "players-drop-loot")){
 					
 				}
@@ -330,7 +373,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Player Chat [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerChat(AsyncPlayerChatEvent e){
 		Player player = e.getPlayer();
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
@@ -346,7 +389,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO WhiteList [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerTeleport2(PlayerTeleportEvent e){
 	Player player = e.getPlayer();
 	if (player.hasPermission("worldcontrol.override.*")){ return; }
@@ -372,7 +415,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Player Interact [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerInteract(PlayerInteractEvent e){
 		Player player = e.getPlayer();
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
@@ -401,7 +444,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Nether Portal Teleport [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR)
+	@EventHandler 
 	public void onPlayerPortalTeleport(PlayerPortalEvent e){
 		Player player = e.getPlayer();
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
@@ -446,8 +489,9 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Nether Portal Create [SETTING]
-	@EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
+	@EventHandler 
 	public void onPlayerPortalCreate(PortalCreateEvent e){
+
 		if (WorldControl.worldContainsSettings(e.getWorld().getName())){
 			if ((boolean) WorldControl.getWorldSettingValue(e.getWorld().getName(), "nether-portal-can-create")){
 				return;
@@ -468,8 +512,9 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO World Title Join [FEATURE]
-	@EventHandler
+	@EventHandler 
 	public void onPlayerChangeWorld(PlayerChangedWorldEvent e){
+		try {
 		Player player = e.getPlayer();
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "title-join")){
@@ -499,9 +544,13 @@ public class BukkitWorldControlEvent implements Listener {
 			}
 		}
 	}
+	catch (Exception exc){
+		
+	}
+	}
 	
 	//TODO World Permission
-	@EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
+	@EventHandler 
 	public void onPlayerTeleportRestrict(PlayerTeleportEvent e){
 		Player player = e.getPlayer();
 		if (player.hasPermission("worldcontrol.override.*")){ return; }
@@ -519,11 +568,16 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Default World GameMode [SETTING]
-	@EventHandler (priority = EventPriority.HIGH, ignoreCancelled = true)
+	@EventHandler 
 	public void onPlayerTeleportChangeWorld(PlayerChangedWorldEvent e){
-		Player player = e.getPlayer();
-		if (player.hasPermission("worldcontrol.override.*")){ return; }
-		player.setGameMode(GameMode.valueOf(WorldControl.getWorldSettingValue(player.getWorld().getName(), "default-gamemode").toString().toUpperCase()));
+		try {
+			Player player = e.getPlayer();
+			if (player.hasPermission("worldcontrol.override.*")){ return; }
+			player.setGameMode(GameMode.valueOf(WorldControl.getWorldSettingValue(player.getWorld().getName(), "default-gamemode").toString().toUpperCase()));
+		}
+		catch (Exception exc){
+			
+		}
 	}
 	
 }

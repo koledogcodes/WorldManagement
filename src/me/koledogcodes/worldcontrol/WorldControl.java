@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.Metrics;
 
 import me.koledogcodes.worldcontrol.commands.worldControlCommand;
+import me.koledogcodes.worldcontrol.commands.worldControlImportCommand;
 import me.koledogcodes.worldcontrol.configs.BlockDataFile;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
@@ -17,6 +18,7 @@ import me.koledogcodes.worldcontrol.configs.WorldSignFile;
 import me.koledogcodes.worldcontrol.configs.WorldSpawnFile;
 import me.koledogcodes.worldcontrol.configs.WorldWhitelistFile;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlEvent;
+import me.koledogcodes.worldcontrol.events.BukkitWorldControlHandleEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlLogEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlPortalEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlSignEvent;
@@ -89,12 +91,14 @@ public class WorldControl extends JavaPlugin {
 		WorldPortalLocationFile.reloadCustomConfig();
 		BlockDataFile.reloadCustomConfig();
 		
+		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlHandleEvent (this), this);
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlSignEvent (this), this);
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlPortalEvent (this), this);
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlEvent (this), this);
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlLogEvent (this), this);
 		
 		getCommand("worldcontrol").setExecutor(new worldControlCommand (this));
+		getCommand("wc-import").setExecutor(new worldControlImportCommand (this));
 		
 		handler = new WorldControlHandler(this);
 		
@@ -104,7 +108,12 @@ public class WorldControl extends JavaPlugin {
 		}
 		
 		//Regenerate Configuration
-		handler.regenerateConfigForWorlds();
+		handler.logConsole("------------------------------------");
+		for (String world: handler.getAllWorlds()){
+			handler.logConsole("Regenerating configuration for world '" + world + "'.");
+			handler.generateWorldConfiguration(world);
+		}
+		handler.logConsole("------------------------------------");
 		handler.generateConfiguration();
 	}
 	

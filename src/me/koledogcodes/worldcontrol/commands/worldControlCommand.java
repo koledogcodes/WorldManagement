@@ -13,12 +13,15 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import me.koledogcodes.worldcontrol.WorldControl;
+import me.koledogcodes.worldcontrol.api.WorldInfo;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
 import me.koledogcodes.worldcontrol.handler.WorldControlHandler;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutHoverChat;
 
 public class worldControlCommand implements CommandExecutor {
+	
+	private final int MAX_PAGE = 6;
 	
 	//Constrcutor
 	private WorldControl plugin;
@@ -53,7 +56,7 @@ public class worldControlCommand implements CommandExecutor {
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc exist <world>", " &b- &b(Hover)", "&aThis command simply checks if a world exists.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc load <world>", " &b- &b(Hover)", "&aThis command simply loads exisitng worlds.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc unload <world>", " &b- &b(Hover)", "&aThis command simply unloads a exisitng world.");	
-		ChatUtili.sendTranslatedMessage(player, "&3----- &bPage 1/5 &3-----");
+		ChatUtili.sendTranslatedMessage(player, "&3----- &bPage 1/" + MAX_PAGE + " &3-----");
 			return true;
 		}
 		
@@ -148,6 +151,21 @@ public class worldControlCommand implements CommandExecutor {
 				ChatUtili.sendTranslatedMessage(player, "&cYou need to select a block with &4'/wc inspect'.");
 			}
 		}
+		else if (args[0].equalsIgnoreCase("who")){
+			WorldInfo worldInfo = new WorldInfo(player.getWorld());
+			ChatUtili.sendSimpleTranslatedMessage(player, "&f---------- &6World Info &f--------");
+			ChatUtili.sendSimpleTranslatedMessage(player, "&7World name: &a" + worldInfo.getWorldName());
+			if (worldInfo.getMaxPlayers() != -1){
+				ChatUtili.sendSimpleTranslatedMessage(player, "&7World Player Count: &a" + worldInfo.getPlayerCount() + "/" + worldInfo.getMaxPlayers());
+			}
+			else {
+				ChatUtili.sendSimpleTranslatedMessage(player, "&7World Player Count: &a" + worldInfo.getPlayerCount() + "/(Infinite)");
+			}
+			ChatUtili.sendSimpleTranslatedMessage(player, "&f----------------------------");
+		}
+		else if (args[0].equalsIgnoreCase("getflag")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to view flags from.");
+		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
 		}
@@ -236,7 +254,7 @@ public class worldControlCommand implements CommandExecutor {
 			}
 			
 			if (WorldControl.worldFolderExists(args[1]) == false){
-				ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' doesnt exist.");
+				ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' doesn't exist.");
 				return true;
 			}
 			ChatUtili.sendTranslatedMessage(player, "&aDeleting world '" + args[1] + "'.");
@@ -267,7 +285,7 @@ public class worldControlCommand implements CommandExecutor {
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc exist <world>", " &b- &b(Hover)", "&aThis command simply checks if a world exists.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc load <world>", " &b- &b(Hover)", "&aThis command simply loads exisitng worlds.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc unload <world>", " &b- &b(Hover)", "&aThis command simply unloads a exisitng world.");	
-				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/5 &3-----");
+				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
 			else if (args[1].equalsIgnoreCase("2")){
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
@@ -276,7 +294,7 @@ public class worldControlCommand implements CommandExecutor {
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc createconf <world>", " &b- &b(Hover)", "&aThis command creates a config file for the specified world.");	
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc flag <world> <option> <value>", " &b- &b(Hover)", "&aThis command allows you to edit flags for worlds. (Config option's)");	
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc reload", " &b- &b(Hover)", "&aThis command reloads the entire plugin.");
-				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/5 &3-----");
+				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
 			else if (args[1].equalsIgnoreCase("3")){
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
@@ -285,7 +303,7 @@ public class worldControlCommand implements CommandExecutor {
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc copy <old world> <new world>", " &b- &b(Hover)", "&aThis command will copy a \n&aold world to a newly created world.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc whitelist <world>", " &b- &b(Hover)", "&aThis command toogles the whitelist on or off \n&afor the specifed world.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc whitelist <world> list", " &b- &b(Hover)", "&aThis command list all players in the whitelist for the specifed world.");	
-				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/5 &3-----");
+				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
 			else if (args[1].equalsIgnoreCase("4")){
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
@@ -295,7 +313,7 @@ public class worldControlCommand implements CommandExecutor {
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc set-portal-dest <destationn name>", " &b- &b(Hover)", "&aThis command sets a destation for a portal.");	
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc delete-portal <portal>", " &b- &b(Hover)", "&aThis command deletes a portal.");	
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc delete-portal-dest <destation name>", " &b- &b(Hover)", "&aThis command deletes a destation.");	
-				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/5 &3-----");
+				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
 			else if (args[1].equalsIgnoreCase("5")){
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
@@ -303,7 +321,13 @@ public class worldControlCommand implements CommandExecutor {
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc dest-list", " &b- &b(Hover)", "&aThis command list all portal destation.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc inspect", " &b- &b(Hover)", "&aThis command checks who placed or broke a block.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc lookup <page>", " &b- &b(Hover)", "&aThis command checks a page of a inspected block (Most Recent)");
-				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/5 &3-----");
+				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc who [player]", " &b- &b(Hover)", "&aThis command checks what world a player is in.");
+				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
+			}
+			else if (args[1].equalsIgnoreCase("6")){
+				ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
+				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc getflag <world> <flag>", " &b- &b(Hover)", "&aGets the flag value of a specfic world.");
+				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
 			else {
 				ChatUtili.sendTranslatedMessage(player, "&cInvalid page.");
@@ -330,6 +354,34 @@ public class worldControlCommand implements CommandExecutor {
 			else {
 				ChatUtili.sendTranslatedMessage(player, "&cYou need to select a block with &4'/wc inspect'.");
 			}
+		}
+		else if (args[0].equalsIgnoreCase("who")){
+			if (Bukkit.getServer().getPlayerExact(args[1]) == null){
+				ChatUtili.sendTranslatedMessage(player, "&cPlayer &4" + args[1] + " &cis not online.");
+				return true;
+			}
+			
+			Player target = Bukkit.getServer().getPlayerExact(args[1]);
+			
+			WorldInfo worldInfo = new WorldInfo(target.getWorld());
+			ChatUtili.sendSimpleTranslatedMessage(player, "&f---------- &6World Info &f--------");
+			ChatUtili.sendSimpleTranslatedMessage(player, "&7Player Name: &a" + target.getName());
+			ChatUtili.sendSimpleTranslatedMessage(player, "&7World name: &a" + worldInfo.getWorldName());
+			if (worldInfo.getMaxPlayers() != -1){
+				ChatUtili.sendSimpleTranslatedMessage(player, "&7World Player Count: &a" + worldInfo.getPlayerCount() + "/" + worldInfo.getMaxPlayers());
+			}
+			else {
+				ChatUtili.sendSimpleTranslatedMessage(player, "&7World Player Count: &a" + worldInfo.getPlayerCount() + "/(Infinite)");
+			}
+			ChatUtili.sendSimpleTranslatedMessage(player, "&f----------------------------");
+		}
+		else if (args[0].equalsIgnoreCase("getflag")){
+			if (WorldControl.worldFolderExists(args[1]) == false){
+				ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+				return true;
+			}
+			
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world flag.");
 		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
@@ -394,6 +446,19 @@ public class worldControlCommand implements CommandExecutor {
 				else {
 					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
 				}
+			}
+			else if (args[0].equalsIgnoreCase("getflag")){
+				if (WorldControl.worldFolderExists(args[1]) == false){
+					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+					return true;
+				}
+				
+				if (WorldControl.worldFlagExists(args[1], args[2].toLowerCase()) == false){
+					ChatUtili.sendTranslatedMessage(player, "&7World '&c" + args[1] + "&7' does not have flag '&c" + args[2] + "&7'.");
+					return true;
+				}
+				
+				ChatUtili.sendTranslatedMessage(player, "&7World '&a" + args[1] + "&7' flag '&a" + args[2] + "&7' is: &e" + WorldControl.getWorldSettingValue(args[1], args[2].toLowerCase()));
 			}
 			else {
 				packetHoverMessage.sendHoverMessage(player, prefix,  "&cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");

@@ -21,7 +21,7 @@ public class PacketOutHoverChat {
         PacketHandler.sendPacket(player, packet);
 	} 
 	catch (Exception e) {
-		e.printStackTrace();
+		player.sendMessage(ChatColor.translateAlternateColorCodes('&', firstMessage + " &c(Hover &cFailed)"));
 	} 
 	}	
 	
@@ -35,7 +35,7 @@ public class PacketOutHoverChat {
         PacketHandler.sendPacket(player, packet);
 	} 
 	catch (Exception e) {
-		e.printStackTrace();
+		player.sendMessage(ChatColor.translateAlternateColorCodes('&', extraHoverableMessage));
 	} 
 	}	
 	
@@ -50,7 +50,7 @@ public class PacketOutHoverChat {
         PacketHandler.sendPacket(player, packet);
 	} 
 	catch (Exception e) {
-		e.printStackTrace();
+		player.sendMessage(ChatColor.translateAlternateColorCodes('&', HoverableMessage + lastMessage));
 	} 
 	}
 	

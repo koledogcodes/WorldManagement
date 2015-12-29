@@ -94,12 +94,17 @@ public class BukkitWorldControlSignEvent implements Listener {
 	public void worldChangeEvent(PlayerChangedWorldEvent e){
 		List<String> signs = WorldControl.getAllWorldControlSignLoc();
 		for (int i = 0; i < signs.size(); i++){
-			if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
-				Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
-				if (WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("PLAYER_LIST")){
-					s.setLine(2, WorldControl.colorTranslate("&a" + Bukkit.getWorld(ChatColor.stripColor(s.getLine(1))).getPlayers().size() + "/" + WorldControl.getWorldSettingValue(ChatColor.stripColor(s.getLine(1)), "player-limit")));
-					s.update();
+			try {
+				if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
+					Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
+					if (WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("PLAYER_LIST")){
+						s.setLine(2, WorldControl.colorTranslate("&a" + Bukkit.getWorld(ChatColor.stripColor(s.getLine(1))).getPlayers().size() + "/" + WorldControl.getWorldSettingValue(ChatColor.stripColor(s.getLine(1)), "player-limit")));
+						s.update();
+					}
 				}
+			}
+			catch (Exception exc){
+				WorldControl.logConsole("Failed to set worldcontrol sign at (" + signs.get(i) + ")");
 			}
 		}
 	}
@@ -107,20 +112,21 @@ public class BukkitWorldControlSignEvent implements Listener {
 	//TODO WorldControl Unload World
 	@EventHandler
 	public void wcUnloadWorld(WorldControlUnloadWorldEvent e){
-		try {
-			List<String> signs = WorldControl.getAllWorldControlSignLoc();
+		List<String> signs = WorldControl.getAllWorldControlSignLoc();
+		
 			for (int i = 0; i < signs.size(); i++){
-				if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
-					Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
+				try {
+					if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
+						Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
 					if (ChatColor.stripColor(s.getLine(1)).equalsIgnoreCase(e.getUnloadedWorldName()) && WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("STATUS")){
 						s.setLine(2, WorldControl.colorTranslate("&c(Not Loaded)"));
 						s.update();
 					}
 				}
 			}
-		}
-		catch (Exception exc){
-			WorldControl.logConsole("Error: Updating worldcontrol signs.");
+			catch (Exception exc){
+				WorldControl.logConsole("Failed to set worldcontrol sign at (" + signs.get(i) + ")");
+			}
 		}
 	}
 	
@@ -129,14 +135,19 @@ public class BukkitWorldControlSignEvent implements Listener {
 	public void wcLoadWorld(WorldControlLoadWorldEvent e){
 		List<String> signs = WorldControl.getAllWorldControlSignLoc();
 		for (int i = 0; i < signs.size(); i++){
-			if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
-				Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
-				if (ChatColor.stripColor(s.getLine(1)).equalsIgnoreCase(e.getLoadedWorldName()) && WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("STATUS")){
-					s.setLine(2, WorldControl.colorTranslate("&a(Loaded)"));
-					s.update();
+			try {
+				if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
+					Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
+					if (ChatColor.stripColor(s.getLine(1)).equalsIgnoreCase(e.getLoadedWorldName()) && WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("STATUS")){
+						s.setLine(2, WorldControl.colorTranslate("&a(Loaded)"));
+						s.update();
+					}
 				}
 			}
-		}
+			catch (Exception exc){
+				WorldControl.logConsole("Failed to set worldcontrol sign at (" + signs.get(i) + ")");
+			}
+	    }
 	}
 	
 	@EventHandler
