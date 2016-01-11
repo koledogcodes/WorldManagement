@@ -25,6 +25,10 @@ public class WorldInfo {
 		return (int) WorldControl.getWorldSettingValue(getWorldName(), "player-limit");
 	}
 	
+	public boolean isWhitelisted(){
+		return WorldControl.worldWhitelistIsEnabled(getWorldName());
+	}
+	
 	public String getFallbackWorld(){
 		return (String) WorldControl.getWorldSettingValue(world.getName(), "fallback-world");
 	}

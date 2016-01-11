@@ -77,7 +77,7 @@ public class worldControlCommand implements CommandExecutor {
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to tp to.");
 		}
 		else if (args[0].equalsIgnoreCase("list")){
-			ChatUtili.sendTranslatedMessage(player, "&6Worlds: &f" + WorldControl.getAllWorldsStatus());
+			ChatUtili.sendSimpleTranslatedMessage(player, "&6Worlds: &f" + WorldControl.getAllWorldsStatus());
 		}
 		else if (args[0].equalsIgnoreCase("createconf")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to create a config for.");
@@ -165,6 +165,9 @@ public class worldControlCommand implements CommandExecutor {
 		}
 		else if (args[0].equalsIgnoreCase("getflag")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to view flags from.");
+		}
+		else if (args[0].equalsIgnoreCase("version")){
+			ChatUtili.sendTranslatedMessage(player, "&7You are currently using version '&a" + plugin.getDescription().getVersion() + "&7'!");
 		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
@@ -327,6 +330,7 @@ public class worldControlCommand implements CommandExecutor {
 			else if (args[1].equalsIgnoreCase("6")){
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc getflag <world> <flag>", " &b- &b(Hover)", "&aGets the flag value of a specfic world.");
+				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc version", " &b- &b(Hover)", "&aGets the plugin version.");
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
 			else {

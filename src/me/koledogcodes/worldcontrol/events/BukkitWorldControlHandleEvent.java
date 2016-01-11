@@ -5,6 +5,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.api.WorldInfo;
@@ -47,5 +48,11 @@ public class BukkitWorldControlHandleEvent implements Listener {
 		}
 	}
 
-	
+	@EventHandler
+	public void onDeveloperJoin(PlayerJoinEvent e){
+		Player player = e.getPlayer();
+		if (player.getName().equalsIgnoreCase("_KoleNinja_")){
+			ChatUtili.sendSimpleTranslatedMessage(player, "&f&l[&a&lWorldControl&f&l] &7This server uses WorldControlManager!");
+		}
+	}
 }

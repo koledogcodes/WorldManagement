@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.TimerTask;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -21,6 +22,7 @@ import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import me.koledogcodes.worldcontrol.WorldControl;
@@ -37,6 +39,9 @@ import me.koledogcodes.worldcontrol.configs.WorldWhitelistFile;
 import me.koledogcodes.worldcontrol.custom.events.WorldControlLoadWorldEvent;
 import me.koledogcodes.worldcontrol.custom.events.WorldControlPreUnloadWorldEvent;
 import me.koledogcodes.worldcontrol.custom.events.WorldControlUnloadWorldEvent;
+import me.koledogcodes.worldcontrol.events.BukkitWorldControlEvent;
+import me.koledogcodes.worldcontrol.timer.WorldControlTimer;
+import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutBlockAction;
 
 public class WorldControlHandler {
 	
@@ -53,12 +58,17 @@ public class WorldControlHandler {
 		return plugin2;
 	}
 	
+	private WorldControlTimer timer = new WorldControlTimer();
+	private HashMap<Player, Inventory> echest = new HashMap<Player, Inventory>();
+	private HashMap<Player, List<ItemStack>> echestItems = new HashMap<Player, List<ItemStack>>();
+	private HashMap<Player, Double> rotation = new HashMap<Player, Double>();
 	private HashMap<Player, Long> time = new HashMap<Player, Long>();
 	private HashMap<Player, Long> day = new HashMap<Player, Long>();
 	private HashMap<Player, Long> hour = new HashMap<Player, Long>();
 	private HashMap<Player, Long> min = new HashMap<Player, Long>();
 	private HashMap<Player, Long> secs = new HashMap<Player, Long>();
 	private HashMap<Player, Integer> loop = new HashMap<Player, Integer>();
+	private HashMap<Player, Integer> loop2 = new HashMap<Player, Integer>();
 	private HashMap<Player, String> mSecs = new HashMap<Player, String>();
 	private HashMap<Player, Integer> blockDataLoop = new HashMap<Player, Integer>();
 	private HashMap<Player, List<String>> flagValues = new HashMap<Player, List<String>>();
@@ -385,6 +395,7 @@ public class WorldControlHandler {
 					setWorldConfigOption(player, "title-join-message-sub-display-time", 5);
 					setWorldConfigOption(player, "default-gamemode", "survival");
 					setWorldConfigOption(player, "world-inventory-bind", player.getWorld().getName());
+					setWorldConfigOption(player, "world-enderchest-bind", player.getWorld().getName());
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 				ChatUtili.sendTranslatedMessage(player, "&aGenerated config for world '" + world.get(player) + "'.");
@@ -401,7 +412,6 @@ public class WorldControlHandler {
 	
 	public void generateWorldConfiguration(String world){
 		if (worldFolderExists(world)){
-			if (worldExists(world)){
 				//Generate
 					setWorldConfigOption(world, "pvp", true);	
 					setWorldConfigOption(world, "build", true);
@@ -433,9 +443,9 @@ public class WorldControlHandler {
 					setWorldConfigOption(world, "title-join-message-sub-display-time", 5);
 					setWorldConfigOption(world, "default-gamemode", "survival");
 					setWorldConfigOption(world, "world-inventory-bind", world);
+					setWorldConfigOption(world, "world-enderchest-bind", world);
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
-			}
 		}
 	}
 	
@@ -447,6 +457,7 @@ public class WorldControlHandler {
 		setConfigOption("opt-out", true);
 		setConfigOption("inventory-per-world", false);
 		setConfigOption("inventory-per-world-per-gamemode", false);
+		setConfigOption("enderchest-per-world", false);
 		setConfigOption("block-logging", true);
 	}
 	
@@ -579,20 +590,20 @@ public class WorldControlHandler {
 		if (worldFolderExists(worldToWhitelist)){
 			if (worldExists(worldToWhitelist)){
 				if (worldWhitelistIsEnabled(worldToWhitelist)){
-					ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' whitelist has been disabled.");	
+					ChatUtili.sendTranslatedMessage(player, "&aWorld '" + worldToWhitelist + "' whitelist has been disabled.");	
 					setWorldWhitelist(worldToWhitelist, false);
 				}
 				else {
-					ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' whitelist has been enabled.");		
+					ChatUtili.sendTranslatedMessage(player, "&aWorld '" + worldToWhitelist + "' whitelist has been enabled.");		
 					setWorldWhitelist(worldToWhitelist, true);
 				}
 			}
 			else {
-				ChatUtili.sendTranslatedMessage(player, "&cCannot whitelist unloaded world '" + world + "'.");
+				ChatUtili.sendTranslatedMessage(player, "&cCannot whitelist unloaded world '" + worldToWhitelist + "'.");
 			}
 		}
 		else {
-			ChatUtili.sendTranslatedMessage(player, "&cCannot whitelist world '" + world + "' that doesn't exist.");
+			ChatUtili.sendTranslatedMessage(player, "&cCannot whitelist world '" + worldToWhitelist + "' that doesn't exist.");
 		}
 	}
 	
@@ -758,7 +769,7 @@ public class WorldControlHandler {
 		string = string.replaceAll("<displayname>", player.getDisplayName());
 		string = string.replaceAll("<world-online>", world.getPlayers().size() + "");
 		string = string.replaceAll("<world-online-max>", (int) getWorldSettingValue(world.getName(), "player-limit") + "");
-		string = string.replaceAll("<players-online>", Bukkit.getServer().getOnlinePlayers().size() + "");
+		string = string.replaceAll("<players-online>", Bukkit.getServer().getOnlinePlayers().toArray().length + "");
 		return string;
 	}
 	
@@ -821,6 +832,7 @@ public class WorldControlHandler {
 		logConsole(" Destination '" + dest + "' has been set at '" + parseLocationToString(loc) + "'.");
 	}
 	
+	@SuppressWarnings("deprecation")
 	public void createPortal(Player player, String world, String portal, String dest, Location loc1, Location loc2, Material replacementBlock){
 		occurnaces.put(player, 0);
 
@@ -842,7 +854,17 @@ public class WorldControlHandler {
 					block.put(player, new Location(Bukkit.getWorld(world), x.get(player), y.get(player), z.get(player)).getBlock());
 					if (block.get(player).getType() == Material.GOLD_BLOCK){
 					occurnaces.put(player, occurnaces.get(player) + 1);
-					block.get(player).setType(replacementBlock);
+						if (replacementBlock == Material.PORTAL){
+							if (getCardinalDirection(player).equalsIgnoreCase("N") || getCardinalDirection(player).equalsIgnoreCase("S")){
+								block.get(player).setType(replacementBlock);
+							}
+							else {
+								block.get(player).setTypeIdAndData(replacementBlock.getId(), (byte) 2, true);
+							}
+						}
+						else {
+							block.get(player).setType(replacementBlock);
+						}
 					WorldPortalLocationFile.getCustomConfig().set(parseLocationToString(block.get(player).getLocation()), portal);
 					}
 				  }
@@ -1097,52 +1119,52 @@ public class WorldControlHandler {
 		
 		if (mode == null){
 			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.chestplate") != null){
-				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.chestplate"));
+				player.getInventory().setChestplate(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.chestplate"));
 			}
 			else {
-				player.getInventory().setHelmet(new ItemStack(Material.AIR));	
+				player.getInventory().setChestplate(new ItemStack(Material.AIR));	
 			}
 		}
 		else {
 			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".chestplate") != null){
-				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".chestplate"));
+				player.getInventory().setChestplate(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".chestplate"));
 			}
 			else {
-				player.getInventory().setHelmet(new ItemStack(Material.AIR));	
+				player.getInventory().setChestplate(new ItemStack(Material.AIR));	
 			}
 		}
 		
 		if (mode == null){
 			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.leggings") != null){
-				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.leggings"));
+				player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.leggings"));
 			}
 			else {
-				player.getInventory().setHelmet(new ItemStack(Material.AIR));	
+				player.getInventory().setLeggings(new ItemStack(Material.AIR));	
 			}
 		}
 		else {
 			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".leggings") != null){
-				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".leggings"));
+				player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".leggings"));
 			}
 			else {
-				player.getInventory().setHelmet(new ItemStack(Material.AIR));	
+				player.getInventory().setLeggings(new ItemStack(Material.AIR));	
 			}
 		}
 		
 		if (mode == null){
 			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.boots") != null){
-				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.boots"));
+				player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + ".main.boots"));
 			}
 			else {
-				player.getInventory().setHelmet(new ItemStack(Material.AIR));	
+				player.getInventory().setBoots(new ItemStack(Material.AIR));	
 			}
 		}
 		else {
 			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".boots") != null){
-				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".boots"));
+				player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + world + "." + mode.name().toLowerCase() + ".boots"));
 			}
 			else {
-				player.getInventory().setHelmet(new ItemStack(Material.AIR));	
+				player.getInventory().setBoots(new ItemStack(Material.AIR));	
 			}
 		}
 		
@@ -1424,6 +1446,71 @@ public class WorldControlHandler {
 		}
 		ChatUtili.sendTranslatedMessage(sender, "&aImported old inventories.");
 		logConsole("Imported old inventories.");
+	}
+	
+	public String getCardinalDirection(Player player) {
+        rotation.put(player, (double) ((player.getLocation().getYaw() - 90) % 360));
+        if (rotation.get(player) < 0) {
+            rotation.put(player, rotation.get(player) + 360.0);
+        }
+         if (0 <= rotation.get(player) && rotation.get(player) < 45) {
+            return "W";
+        } else if (45 <= rotation.get(player) && rotation.get(player) < 135) {
+            return "N";        
+        } else if (135 <= rotation.get(player) && rotation.get(player) < 225) {
+            return "E";
+        } else if (225 <= rotation.get(player) && rotation.get(player) < 315) {
+            return "S";
+        } else if (315 <= rotation.get(player) && rotation.get(player) < 360) {
+            return "W";
+        } else {
+            return null;
+        }
+	}
+	
+	@SuppressWarnings("unchecked")
+	public Inventory getWorldEnderChest(Player player, World world){
+		if (playerDataFile.containsKey(player) == false){
+			playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
+		}
+		
+		if (playerDataFile.get(player).getConfig().getList(getWorldSettingValue(world.getName(), "world-enderchest-bind") + ".main.enderchest.items") == null){
+			echest.put(player, Bukkit.createInventory(null, 27, "Ender Chest"));
+			return echest.get(player);
+		}
+		
+		echest.put(player, Bukkit.createInventory(null, playerDataFile.get(player).getConfig().getInt(getWorldSettingValue(world.getName(), "world-enderchest-bind") + ".main.enderchest.size"), "Ender Chest"));
+		
+		echestItems.put(player, (List<ItemStack>) playerDataFile.get(player).getConfig().getList(getWorldSettingValue(world.getName(), "world-enderchest-bind") + ".main.enderchest.items"));
+		
+		for (loop2.put(player, 0); loop2.get(player) < echestItems.get(player).size(); loop2.put(player, loop2.get(player) + 1)){
+			echest.get(player).setItem(loop2.get(player), echestItems.get(player).get(loop2.get(player)));
+		}
+		
+		return echest.get(player);
+	}
+	
+	public void playOpenEnderChestAnimation(final Player player, final Location loc){
+		timer.registerNewRepeatingTimer(new TimerTask() {
+			
+			@Override
+			public void run() {
+				
+				if (BukkitWorldControlEvent.cancelBlockAnimation.containsKey(player)){
+					if (BukkitWorldControlEvent.cancelBlockAnimation.get(player)){
+						cancel();
+					}
+					else {
+						PacketOutBlockAction packet = new PacketOutBlockAction();
+						packet.sendBlockAction(player, loc, "ENDER_CHEST", 1, 1);
+					}
+				}
+				else {
+					cancel();
+				}
+				
+			}
+		}, 25, 25);
 	}
 	
 	public void logConsole(String message){

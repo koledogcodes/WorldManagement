@@ -67,8 +67,10 @@ public class BukkitWorldControlPortalEvent implements Listener {
 	@EventHandler
 	public void onPlayerWalk(PlayerMoveEvent e){
 		Player player = e.getPlayer();
-		if (e.getFrom().getBlockX() == e.getTo().getBlockX() && e.getFrom().getBlockY() == e.getTo().getBlockY() && e.getFrom().getBlockZ() == e.getTo().getBlockZ()){ return; }
+		
 		if (WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation())) == null){ return; }
+		
+		//if (e.getFrom().getBlockX() == e.getTo().getBlockX() && e.getFrom().getBlockY() == e.getTo().getBlockY() && e.getFrom().getBlockZ() == e.getTo().getBlockZ()){ return; }
 		
 		if (player.hasPermission("worldcontrol.portal.*") == false){
 			if (player.hasPermission("worldcontrol.portal." + WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation())))){
@@ -93,6 +95,7 @@ public class BukkitWorldControlPortalEvent implements Listener {
 	//TODO Liquid Flow Out [PORTAL]
 	@EventHandler
 	public void onLiquidFlow(BlockFromToEvent e){
+		if (e.getBlock().getType() == Material.GOLD_BLOCK && (e.getToBlock().getType() == Material.PORTAL || e.getToBlock().getType() == Material.ENDER_PORTAL)){ e.setCancelled(true); }
 		if (WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlock().getLocation())) == null){ return; }
 		e.setCancelled(true);
 	}

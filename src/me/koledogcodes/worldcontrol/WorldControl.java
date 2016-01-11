@@ -2,6 +2,10 @@ package me.koledogcodes.worldcontrol;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -25,6 +29,7 @@ import me.koledogcodes.worldcontrol.events.BukkitWorldControlSignEvent;
 import me.koledogcodes.worldcontrol.handler.BlockVector;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
 import me.koledogcodes.worldcontrol.handler.WorldControlHandler;
+import me.koledogcodes.worldcontrol.timer.WorldControlTimer;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketHandler;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutClickChat;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutHoverChat;
@@ -34,6 +39,8 @@ import net.gravitydevelopment.updater.Updater.UpdateType;
 public class WorldControl extends JavaPlugin {
 
 	private WorldControlHandler handler;
+	public static List<Timer> activeTimers = new ArrayList<Timer>();
+	public static List<TimerTask> activeTasks = new ArrayList<TimerTask>();
 	
 	@SuppressWarnings("unused")
 	public void onEnable(){
@@ -57,7 +64,7 @@ public class WorldControl extends JavaPlugin {
 				file.mkdirs();
 			file = new File(getDataFolder() + "/Spawns");
 				file.mkdirs();
-				file = new File(getDataFolder() + "/Userdata");
+			file = new File(getDataFolder() + "/Userdata");
 				file.mkdirs();
 		} 
 		catch (IOException e) {
@@ -102,6 +109,8 @@ public class WorldControl extends JavaPlugin {
 		
 		handler = new WorldControlHandler(this);
 		
+		
+		
 		//Loading worlds
 		for (int i = 0; i < getConfig().getStringList("worlds-to-load-on-startup").size(); i++){
 			handler.loadWorld(null, getConfig().getStringList("worlds-to-load-on-startup").get(i));
@@ -118,10 +127,13 @@ public class WorldControl extends JavaPlugin {
 	}
 	
 	public void onDisable(){
-		getLogger().info("Saving block data..");
+		getLogger().info("Saving block data...");
 		BlockDataFile.saveCustomConfig();
 		BlockDataFile.reloadCustomConfig();
 		getLogger().info("Block data has been saved.");
+		
+		WorldControlTimer timer = new WorldControlTimer();
+		timer.cancelAllTimers(true);
 	}
 	
 	public void reloadWorldControlPlugin(){

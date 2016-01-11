@@ -4,15 +4,17 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.TravelAgent;
 import org.bukkit.World.Environment;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -20,6 +22,8 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -33,6 +37,7 @@ import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.PortalCreateEvent;
 
 import me.koledogcodes.worldcontrol.WorldControl;
+import me.koledogcodes.worldcontrol.api.WorldFlag;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.PlayerDataFile;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
@@ -49,6 +54,7 @@ public class BukkitWorldControlEvent implements Listener {
 	private WorldControlHandler WorldControl = new WorldControlHandler();
 	private HashMap<Player, String> customJoinMessage = new HashMap<Player, String>();
 	HashMap<Player, PlayerDataFile> playerDataFile = new HashMap<Player, PlayerDataFile>();
+	public static HashMap<Player, Boolean> cancelBlockAnimation = new HashMap<Player, Boolean>();
 	//private HashMap<Player, Integer> loop = new HashMap<Player, Integer>();
 	//private HashMap<Player, List<ItemStack>> worldInventory = new HashMap<Player, List<ItemStack>>();
 	
@@ -56,7 +62,7 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler 
 	public void onPlayerJoinGameSetFile(PlayerJoinEvent e){
 		Player player = e.getPlayer();
-		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world") == false){ return; }
+		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world") == false && ConfigFile.getCustomConfig().getBoolean("enderchest-per-world") == false){ return; }
 		if (playerDataFile.containsKey(player) == false){
 			playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
 		}
@@ -75,11 +81,11 @@ public class BukkitWorldControlEvent implements Listener {
 		}
 		
 		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world-per-gamemode")){
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".inventory", player.getInventory().getContents());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".helm", player.getInventory().getHelmet());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".chestplate", player.getInventory().getChestplate());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".leggings", player.getInventory().getLeggings());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + player.getGameMode().name().toLowerCase() + ".boots", player.getInventory().getBoots());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(player.getWorld().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".inventory", player.getInventory().getContents());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(player.getWorld().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".helm", player.getInventory().getHelmet());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(player.getWorld().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".chestplate", player.getInventory().getChestplate());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(player.getWorld().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".leggings", player.getInventory().getLeggings());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(player.getWorld().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".boots", player.getInventory().getBoots());
 			playerDataFile.get(player).saveConfig();
 			
 			WorldControl.setCurrentWorldInventory(player, e.getNewGameMode());
@@ -103,21 +109,21 @@ public class BukkitWorldControlEvent implements Listener {
 		}
 		
 		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world-per-gamemode")){
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".inventory", player.getInventory().getContents());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".helm", player.getInventory().getHelmet());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".chestplate", player.getInventory().getChestplate());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".leggings", player.getInventory().getLeggings());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + "." + player.getGameMode().name().toLowerCase() + ".boots", player.getInventory().getBoots());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".inventory", player.getInventory().getContents());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".helm", player.getInventory().getHelmet());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".chestplate", player.getInventory().getChestplate());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".leggings", player.getInventory().getLeggings());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + "." + player.getGameMode().name().toLowerCase() + ".boots", player.getInventory().getBoots());
 			playerDataFile.get(player).saveConfig();
 			
 			WorldControl.setCurrentWorldInventory(player, player.getGameMode());
 		}
 		else {
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.inventory", player.getInventory().getContents());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.helm", player.getInventory().getHelmet());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.chestplate", player.getInventory().getChestplate());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.leggings", player.getInventory().getLeggings());
-			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + e.getFrom().getName() + ".main.boots", player.getInventory().getBoots());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + ".main.inventory", player.getInventory().getContents());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + ".main.helm", player.getInventory().getHelmet());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + ".main.chestplate", player.getInventory().getChestplate());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + ".main.leggings", player.getInventory().getLeggings());
+			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), WorldFlag.WORLD_INVENTORY_BIND.name().toLowerCase()) + ".main.boots", player.getInventory().getBoots());
 			playerDataFile.get(player).saveConfig();
 			
 			WorldControl.setCurrentWorldInventory(player, null);
@@ -498,15 +504,6 @@ public class BukkitWorldControlEvent implements Listener {
 			}
 			else {
 				e.setCancelled(true);
-				for (Entity ent : e.getBlocks().get(0).getWorld().getNearbyEntities(e.getBlocks().get(0).getLocation(), 7, 7, 7)){
-					if (ent.getType() == EntityType.PLAYER){
-						Player player = (Player) ent;
-						ChatUtili.sendTranslatedMessage(player, "&cSorry, portals cannot be created in this world.");
-					}
-					else {
-						continue;
-					}
-				}
 			}
 		}
 	}
@@ -577,6 +574,61 @@ public class BukkitWorldControlEvent implements Listener {
 		}
 		catch (Exception exc){
 			
+		}
+	}
+	
+	//TODO EnderChest Override Bukkit [CONFIGURATION]
+	@EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPlayerClickEnderChest(PlayerInteractEvent e){
+		Player player = e.getPlayer();
+		
+		if (e.getAction() != Action.RIGHT_CLICK_BLOCK){ return; }
+		
+		if (e.getClickedBlock().getType() == Material.ENDER_CHEST){
+			e.setCancelled(true);
+			cancelBlockAnimation.put(player, false);
+			WorldControl.playOpenEnderChestAnimation(player, e.getClickedBlock().getLocation());
+			player.openInventory(WorldControl.getWorldEnderChest(player, player.getWorld()));
+			
+			
+			return;
+		}
+	}
+	
+	//TODO EnderChest Save [CONFIGURATION]
+	@EventHandler
+	public void onEnderChestClose(InventoryCloseEvent e){
+			if (e.getInventory().getName().equalsIgnoreCase(ChatColor.stripColor("Ender Chest"))){
+				Player player = (Player) e.getPlayer();
+				
+				if (ConfigFile.getCustomConfig().getBoolean("enderchest-per-world") == false){ return; }
+				
+				cancelBlockAnimation.put(player, true);
+				
+				if (playerDataFile.containsKey(player) == false){
+					playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
+				}
+				
+				playerDataFile.get(player).getConfig().set(WorldControl.getWorldSettingValue(player.getWorld().getName(), "world-enderchest-bind") + ".main.enderchest.size", e.getInventory().getSize());
+				playerDataFile.get(player).getConfig().set(WorldControl.getWorldSettingValue(player.getWorld().getName(), "world-enderchest-bind") + ".main.enderchest.items", e.getInventory().getContents());
+				playerDataFile.get(player).saveConfig();
+			}
+			else {
+				return;
+			}
+
+	}
+	
+	@EventHandler
+	public void onEnderChestOpen(InventoryOpenEvent e){
+		if (e.getInventory().getName().equalsIgnoreCase(ChatColor.stripColor("Ender Chest"))){
+			Player player = (Player) e.getPlayer();
+			
+			WorldControl = new WorldControlHandler();
+			e.getInventory().setContents(WorldControl.getWorldEnderChest(player, player.getWorld()).getContents());
+		}
+		else {
+			return;
 		}
 	}
 	

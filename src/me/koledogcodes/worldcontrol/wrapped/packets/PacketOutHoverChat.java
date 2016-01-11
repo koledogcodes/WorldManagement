@@ -8,50 +8,43 @@ import org.bukkit.entity.Player;
 public class PacketOutHoverChat {
 
 	public PacketOutHoverChat(){
+		
 	}
 	
 	public void sendHoverMessage(Player player, String firstMessage, String extraHoverableMessage, String hoverMessageDialog){
-	try {
-		firstMessage = ChatColor.translateAlternateColorCodes('&', firstMessage);
-		extraHoverableMessage = ChatColor.translateAlternateColorCodes('&', extraHoverableMessage);
-		hoverMessageDialog = ChatColor.translateAlternateColorCodes('&', hoverMessageDialog);
-        Object chat = PacketHandler.getNMSClass("IChatBaseComponent").getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + firstMessage + " \",\"extra\":[{\"text\":\"" + extraHoverableMessage + "\",\"hoverEvent\":{\"action\":\"show_text\",\"value\":\"" + hoverMessageDialog + "\"}}]}");
-        Constructor<?> hoverMessageConstructor = PacketHandler.getNMSClass("PacketPlayOutChat").getConstructor(PacketHandler.getNMSClass("IChatBaseComponent"), byte.class);
-        Object packet = hoverMessageConstructor.newInstance(chat, (byte) 1);
-        PacketHandler.sendPacket(player, packet);
-	} 
-	catch (Exception e) {
-		player.sendMessage(ChatColor.translateAlternateColorCodes('&', firstMessage + " &c(Hover &cFailed)"));
-	} 
+		if (Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[2].replaceAll("R", "")) >= 3){
+			try {
+				firstMessage = ChatColor.translateAlternateColorCodes('&', firstMessage);
+				extraHoverableMessage = ChatColor.translateAlternateColorCodes('&', extraHoverableMessage);
+				hoverMessageDialog = ChatColor.translateAlternateColorCodes('&', hoverMessageDialog);
+		        Object chat = PacketHandler.getNMSClass("IChatBaseComponent").getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + firstMessage + " \",\"extra\":[{\"text\":\"" + extraHoverableMessage + "\",\"hoverEvent\":{\"action\":\"show_text\",\"value\":\"" + hoverMessageDialog + "\"}}]}");
+		        Constructor<?> hoverMessageConstructor = PacketHandler.getNMSClass("PacketPlayOutChat").getConstructor(PacketHandler.getNMSClass("IChatBaseComponent"), byte.class);
+		        Object packet = hoverMessageConstructor.newInstance(chat, (byte) 1);
+		        PacketHandler.sendPacket(player, packet);
+			} 
+			catch (Exception e) {
+				player.sendMessage(ChatColor.translateAlternateColorCodes('&', firstMessage + " &c(Hover &cFailed)"));
+			}
+		}
+		else {
+			
+	        try {
+				firstMessage = ChatColor.translateAlternateColorCodes('&', firstMessage);
+				extraHoverableMessage = ChatColor.translateAlternateColorCodes('&', extraHoverableMessage);
+				hoverMessageDialog = ChatColor.translateAlternateColorCodes('&', hoverMessageDialog);
+				
+				Constructor<?> hoverMessageConstructor = PacketHandler.getNMSClass("PacketPlayOutChat").getConstructor(PacketHandler.getNMSClass("IChatBaseComponent"));
+				Object chatSer = PacketHandler.getNMSClass("ChatSerializer").getMethod("a", String.class).invoke(null, "{\"text\":\"" + firstMessage + " \",\"extra\":[{\"text\":\"" + extraHoverableMessage + "\",\"hoverEvent\":{\"action\":\"show_text\",\"value\":\"" + hoverMessageDialog + "\"}}]}");;
+				
+				Object packet = hoverMessageConstructor.newInstance(chatSer);
+				PacketHandler.sendPacket(player, packet);
+	        } 
+	        catch (Exception e) {
+				player.sendMessage(ChatColor.translateAlternateColorCodes('&', firstMessage + " &c(Hover &cFailed)"));
+
+			} 
+		}	
 	}	
 	
-	public void sendOnlyHoverMessage(Player player, String extraHoverableMessage, String hoverMessageDialog){
-	try {;
-		extraHoverableMessage = ChatColor.translateAlternateColorCodes('&', extraHoverableMessage);
-		hoverMessageDialog = ChatColor.translateAlternateColorCodes('&', hoverMessageDialog);
-        Object chat = PacketHandler.getNMSClass("IChatBaseComponent").getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + "null" + " \",\"extra\":[{\"text\":\"" + extraHoverableMessage + "\",\"hoverEvent\":{\"action\":\"show_text\",\"value\":\"" + hoverMessageDialog + "\"}}]}".replaceAll("null", ""));
-        Constructor<?> hoverMessageConstructor = PacketHandler.getNMSClass("PacketPlayOutChat").getConstructor(PacketHandler.getNMSClass("IChatBaseComponent"), byte.class);
-        Object packet = hoverMessageConstructor.newInstance(chat, (byte) 1);
-        PacketHandler.sendPacket(player, packet);
-	} 
-	catch (Exception e) {
-		player.sendMessage(ChatColor.translateAlternateColorCodes('&', extraHoverableMessage));
-	} 
-	}	
-	
-	public void sendHoverMessageFirst(Player player, String lastMessage, String HoverableMessage, String hoverMessageDialog){
-	try {
-		lastMessage = ChatColor.translateAlternateColorCodes('&', lastMessage);
-		HoverableMessage = ChatColor.translateAlternateColorCodes('&', HoverableMessage);
-		hoverMessageDialog = ChatColor.translateAlternateColorCodes('&', hoverMessageDialog);
-        Object chat = PacketHandler.getNMSClass("IChatBaseComponent").getDeclaredClasses()[0].getMethod("a", String.class).invoke(null, "{\"text\":\"" + lastMessage + " \",\"extra\":[{\"text\":\"" + HoverableMessage + "\",\"hoverEvent\":{\"action\":\"show_text\",\"value\":\"" + hoverMessageDialog + "\"}}],\"text\":\"" + lastMessage + " \"}");
-        Constructor<?> hoverMessageConstructor = PacketHandler.getNMSClass("PacketPlayOutChat").getConstructor(PacketHandler.getNMSClass("IChatBaseComponent"), byte.class);
-        Object packet = hoverMessageConstructor.newInstance(chat, (byte) 1);
-        PacketHandler.sendPacket(player, packet);
-	} 
-	catch (Exception e) {
-		player.sendMessage(ChatColor.translateAlternateColorCodes('&', HoverableMessage + lastMessage));
-	} 
-	}
 	
 }
