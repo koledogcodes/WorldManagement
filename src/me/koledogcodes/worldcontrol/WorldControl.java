@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.mcstats.Metrics;
 
+import me.koledogcodes.worldcontrol.api.WorldFlagConvertor;
 import me.koledogcodes.worldcontrol.commands.worldControlCommand;
 import me.koledogcodes.worldcontrol.commands.worldControlImportCommand;
 import me.koledogcodes.worldcontrol.configs.BlockDataFile;
@@ -86,6 +87,7 @@ public class WorldControl extends JavaPlugin {
 		new WorldPortalLocationFile (this);
 		new BlockVector();
 		new BlockDataFile (this);
+		new WorldFlagConvertor(this);
 		
 		saveDefaultConfig();
 		reloadConfig();
@@ -98,6 +100,8 @@ public class WorldControl extends JavaPlugin {
 		WorldPortalLocationFile.reloadCustomConfig();
 		BlockDataFile.reloadCustomConfig();
 		
+		WorldControlHandler.setInstance(this);
+		
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlHandleEvent (this), this);
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlSignEvent (this), this);
 		Bukkit.getPluginManager().registerEvents(new BukkitWorldControlPortalEvent (this), this);
@@ -108,8 +112,6 @@ public class WorldControl extends JavaPlugin {
 		getCommand("wc-import").setExecutor(new worldControlImportCommand (this));
 		
 		handler = new WorldControlHandler(this);
-		
-		
 		
 		//Loading worlds
 		for (int i = 0; i < getConfig().getStringList("worlds-to-load-on-startup").size(); i++){
@@ -124,16 +126,25 @@ public class WorldControl extends JavaPlugin {
 		}
 		handler.logConsole("------------------------------------");
 		handler.generateConfiguration();
+		handler.startAutosave();
 	}
 	
 	public void onDisable(){
-		getLogger().info("Saving block data...");
+		handler.logConsole("------------------------------------");
+		getLogger().info("Saving block logging data.");
 		BlockDataFile.saveCustomConfig();
 		BlockDataFile.reloadCustomConfig();
-		getLogger().info("Block data has been saved.");
-		
+		getLogger().info("Block logging data has been saved!");
+		handler.logConsole("------------------------------------");
+		getLogger().info("Cancelling all java timers.");
 		WorldControlTimer timer = new WorldControlTimer();
-		timer.cancelAllTimers(true);
+		timer.cancelAllTimers(false);
+		getLogger().info("All java timers have been cancelled.");
+		handler.logConsole("------------------------------------");
+		getLogger().info("Cancelling all threads");
+		Bukkit.getScheduler().cancelAllTasks();
+		getLogger().info("Cancelled all threads!");
+		handler.logConsole("------------------------------------");
 	}
 	
 	public void reloadWorldControlPlugin(){

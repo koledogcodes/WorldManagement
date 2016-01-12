@@ -32,15 +32,16 @@ public class BukkitWorldControlLogEvent implements Listener {
 		Player player = e.getPlayer();
 		if (e.canBuild() == false){ return; }
 		if (ConfigFile.getCustomConfig().getBoolean("block-logging") == false){ return; }
+		
 		if (BlockDataFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation())) == null){
-			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation()) + ".placed"));
-			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlockPlaced().getType().name());
-			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation()) + ".placed", log.get(player));
+			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation())));
+			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlockPlaced().getType().name() + "#placed");
+			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation()), log.get(player));
 		}
 		else {
-			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation()) + ".placed"));
-			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlockPlaced().getType().name());
-			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation()) + ".placed", log.get(player));
+			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation())));
+			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlockPlaced().getType().name() + "#placed");
+			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation()), log.get(player));
 		}
 	}
 	
@@ -49,15 +50,16 @@ public class BukkitWorldControlLogEvent implements Listener {
 	public void onPlayerBreakBlockLog(BlockBreakEvent e){
 		Player player = e.getPlayer();
 		if (ConfigFile.getCustomConfig().getBoolean("block-logging") == false){ return; }
+		
 		if (BlockDataFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlock().getLocation())) == null){
-			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlock().getLocation()) + ".broken"));
-			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlock().getType().name());
-			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlock().getLocation()) + ".broken", log.get(player));
+			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlock().getLocation())));
+			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlock().getType().name() + "#broken");
+			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlock().getLocation()), log.get(player));
 		}
 		else {
-			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlock().getLocation()) + ".broken"));
-			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlock().getType().name());
-			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlock().getLocation()) + ".broken", log.get(player));
+			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlock().getLocation())));
+			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlock().getType().name() + "#broken");
+			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlock().getLocation()), log.get(player));
 		}
 	}
 	
@@ -72,15 +74,14 @@ public class BukkitWorldControlLogEvent implements Listener {
 		}
 		
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK){
-		WorldControlHandler.blockInspectionLocation.put(player, e.getClickedBlock().getLocation());
-		WorldControlHandler.blockInspectionLocationType.put(player, "PLACED");
-		WorldControl.messagePlacedBlockInformation(player, e.getClickedBlock(), 1);
-		}
-		else if (e.getAction() == Action.LEFT_CLICK_BLOCK){
 		e.setCancelled(true);
 		WorldControlHandler.blockInspectionLocation.put(player, e.getClickedBlock().getLocation());
-		WorldControlHandler.blockInspectionLocationType.put(player, "REMOVED");
-		WorldControl.messageBrokenBlockInformation(player, e.getClickedBlock(), 1);
+		WorldControlHandler.blockInspectionLocationType.put(player, "LIST");
+		WorldControl.messageBlockInformation(player, e.getClickedBlock(), 1);
+		}
+		else if (e.getAction() == Action.LEFT_CLICK_BLOCK){
+		ChatUtili.sendTranslatedMessage(player, "&cYou cannot break block in inspection mode!");
+		e.setCancelled(true);
 		}
 		else {
 			return;

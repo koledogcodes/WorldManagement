@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -45,9 +46,9 @@ import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutBlockAction;
 
 public class WorldControlHandler {
 	
-	private WorldControl plugin2;
+	private static WorldControl plugin;
 	public WorldControlHandler(WorldControl i) {
-		plugin2 = i;
+		
 	}
 
 	public WorldControlHandler() {
@@ -55,9 +56,14 @@ public class WorldControlHandler {
 	}
 	
 	public WorldControl getWorldControl(){
-		return plugin2;
+		return plugin;
 	}
 	
+	public static void setInstance(WorldControl control){
+		plugin = control;
+	}
+	
+	private final static int RESULTS_PER_PAGE = 6;
 	private WorldControlTimer timer = new WorldControlTimer();
 	private HashMap<Player, Inventory> echest = new HashMap<Player, Inventory>();
 	private HashMap<Player, List<ItemStack>> echestItems = new HashMap<Player, List<ItemStack>>();
@@ -367,14 +373,45 @@ public class WorldControlHandler {
 				//Generate
 					setWorldConfigOption(player, "pvp", true);	
 					setWorldConfigOption(player, "build", true);
-					setWorldConfigOption(player, "certain-blocks-place-allow", new String[]{"SEEDS"});
-					setWorldConfigOption(player, "certain-blocks-break-allow", new String[]{"GRASS", "LONG_GRASS"});
+					
+					if (getWorldSettingValue(player.getWorld().getName(), "certain-blocks-place-allow") != null){
+						setWorldConfigOption(player, "block-place-list", getWorldSettingValue(player.getWorld().getName(), "certain-blocks-place-allow"));
+						overrideWorldConfigOption(player.getWorld().getName(), "certain-blocks-place-allow", null);
+					}
+					else {
+						setWorldConfigOption(player, "block-place-list", new String[]{"SEEDS"});
+					}
+					
+					if (getWorldSettingValue(player.getWorld().getName(), "certain-blocks-break-allow") != null){
+						setWorldConfigOption(player, "block-break-list", getWorldSettingValue(player.getWorld().getName(), "certain-blocks-break-allow"));
+						overrideWorldConfigOption(player.getWorld().getName(), "certain-blocks-break-allow", null);
+					}
+					else {
+						setWorldConfigOption(player, "block-break-list", new String[]{"SEEDS"});
+					}
+					
 					setWorldConfigOption(player, "weather-locked", false);
 					setWorldConfigOption(player, "mob-spawn", true);
-					setWorldConfigOption(player, "certain-mob-spawn-allow", new String[]{"CHICKEN","COW","SHEEP"});
+					
+					if (getWorldSettingValue(player.getWorld().getName(), "certain-mob-spawn-allow") != null){
+						setWorldConfigOption(player, "mob-spawn-list", getWorldSettingValue(player.getWorld().getName(), "certain-mob-spawn-allow"));
+						overrideWorldConfigOption(player.getWorld().getName(), "certain-mob-spawn-allow", null);
+					}
+					else {
+						setWorldConfigOption(player, "mob-spawn-list", new String[]{"CHICKEN","COW","SHEEP"});
+					}
+					
 					setWorldConfigOption(player, "player-limit", 1);	
 					setWorldConfigOption(player, "commands-allowed", true);	
-					setWorldConfigOption(player, "certain-commands-use-allow", new String[]{"spawn", "msg", "r"});
+					
+					if (getWorldSettingValue(player.getWorld().getName(), "certain-commands-use-allow") != null){
+						setWorldConfigOption(player, "cmd-allowed-list", getWorldSettingValue(player.getWorld().getName(), "certain-commands-use-allow"));
+						overrideWorldConfigOption(player.getWorld().getName(), "certain-commands-use-allow", null);
+					}
+					else {
+						setWorldConfigOption(player, "cmd-allowed-list", new String[]{"spawn", "msg", "r"});
+					}
+					
 					setWorldConfigOption(player, "fallback-world", "world");
 					setWorldConfigOption(player, "players-invincible", true);
 					setWorldConfigOption(player, "mobs-invincible", true);
@@ -396,6 +433,8 @@ public class WorldControlHandler {
 					setWorldConfigOption(player, "default-gamemode", "survival");
 					setWorldConfigOption(player, "world-inventory-bind", player.getWorld().getName());
 					setWorldConfigOption(player, "world-enderchest-bind", player.getWorld().getName());
+					setWorldConfigOption(player, "leaves-decay", false);
+					setWorldConfigOption(player, "no-hunger", false);
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 				ChatUtili.sendTranslatedMessage(player, "&aGenerated config for world '" + world.get(player) + "'.");
@@ -415,14 +454,44 @@ public class WorldControlHandler {
 				//Generate
 					setWorldConfigOption(world, "pvp", true);	
 					setWorldConfigOption(world, "build", true);
-					setWorldConfigOption(world, "certain-blocks-place-allow", new String[]{"SEEDS"});
-					setWorldConfigOption(world, "certain-blocks-break-allow", new String[]{"GRASS", "LONG_GRASS"});
+					if (getWorldSettingValue(world, "certain-blocks-place-allow") != null){
+						setWorldConfigOption(world, "block-place-list", getWorldSettingValue(world, "certain-blocks-place-allow"));
+						overrideWorldConfigOption(world, "certain-blocks-place-allow", null);
+					}
+					else {
+						setWorldConfigOption(world, "block-place-list", new String[]{"SEEDS"});
+					}
+					
+					if (getWorldSettingValue(world, "certain-blocks-break-allow") != null){
+						setWorldConfigOption(world, "block-break-list", getWorldSettingValue(world, "certain-blocks-break-allow"));
+						overrideWorldConfigOption(world, "certain-blocks-break-allow", null);
+					}
+					else {
+						setWorldConfigOption(world, "block-break-list", new String[]{"SEEDS"});
+					}
+					
 					setWorldConfigOption(world, "weather-locked", false);
 					setWorldConfigOption(world, "mob-spawn", true);
-					setWorldConfigOption(world, "certain-mob-spawn-allow", new String[]{"CHICKEN","COW","SHEEP"});
-					setWorldConfigOption(world, "player-limit", -1);	
+					
+					if (getWorldSettingValue(world, "certain-mob-spawn-allow") != null){
+						setWorldConfigOption(world, "mob-spawn-list", getWorldSettingValue(world, "certain-mob-spawn-allow"));
+						overrideWorldConfigOption(world, "certain-mob-spawn-allow", null);
+					}
+					else {
+						setWorldConfigOption(world, "mob-spawn-list", new String[]{"CHICKEN","COW","SHEEP"});
+					}
+					
+					setWorldConfigOption(world, "player-limit", 1);	
 					setWorldConfigOption(world, "commands-allowed", true);	
-					setWorldConfigOption(world, "certain-commands-use-allow", new String[]{"spawn", "msg", "r"});
+					
+					if (getWorldSettingValue(world, "certain-commands-use-allow") != null){
+						setWorldConfigOption(world, "cmd-allowed-list", getWorldSettingValue(world, "certain-commands-use-allow"));
+						overrideWorldConfigOption(world, "certain-commands-use-allow", null);
+					}
+					else {
+						setWorldConfigOption(world, "cmd-allowed-list", new String[]{"spawn", "msg", "r"});
+					}
+					
 					setWorldConfigOption(world, "fallback-world", "world");
 					setWorldConfigOption(world, "players-invincible", false);
 					setWorldConfigOption(world, "mobs-invincible", false);
@@ -444,6 +513,8 @@ public class WorldControlHandler {
 					setWorldConfigOption(world, "default-gamemode", "survival");
 					setWorldConfigOption(world, "world-inventory-bind", world);
 					setWorldConfigOption(world, "world-enderchest-bind", world);
+					setWorldConfigOption(world, "leaves-decay", false);
+					setWorldConfigOption(world, "no-hunger", false);
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 		}
@@ -459,6 +530,22 @@ public class WorldControlHandler {
 		setConfigOption("inventory-per-world-per-gamemode", false);
 		setConfigOption("enderchest-per-world", false);
 		setConfigOption("block-logging", true);
+		setConfigOption("Autosave.time-in-mins", 15);
+	}
+	
+	public void startAutosave(){
+		long j = ConfigFile.getCustomConfig().getLong("Autosave.time-in-mins");
+		WorldControlTimer timer = new WorldControlTimer();
+		timer.registerNewRepeatingTimer(new TimerTask(){
+
+			@Override
+			public void run() {
+				
+				BlockDataFile.saveCustomConfig();
+				
+			}
+			
+		}, (((1000 * 60) * j) / 2), (((1000 * 60) * j) / 2));
 	}
 	
 	public void setWorldConfigOption(Player player, String setting, Object value){
@@ -1180,13 +1267,14 @@ public class WorldControlHandler {
 	if (worldFlagExists(world, flag)){
 		try {
 			//Setting flag values
+			ChatUtili.messagePrefix = "&8[&dWF&8]";
 			if (flag.equalsIgnoreCase("player-limit") || flag.equalsIgnoreCase("mob-limit") || flag.equalsIgnoreCase("title-join-message-main-display-time") || flag.equalsIgnoreCase("title-join-message-sub-display-time")){
 				overrideWorldConfigOption(world, flag, Integer.parseInt(value[index].toString()));
 				ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7has been set to: &e" + value[index]);
 			}
-			else if (flag.equalsIgnoreCase("certain-blocks-place-allow") || flag.equalsIgnoreCase("certain-blocks-break-allow") ||  flag.equalsIgnoreCase("certain-mob-spawn-allow") || flag.equalsIgnoreCase("certain-commands-use-allow")){
+			else if (flag.equalsIgnoreCase("block-place-list") || flag.equalsIgnoreCase("block-break-list") ||  flag.equalsIgnoreCase("mob-spawn-list") || flag.equalsIgnoreCase("cmd-allowed-list")){
 				flagValues.put(player, ((List<String>) getWorldSettingValue(world, flag)));
-				if (flag.equalsIgnoreCase("certain-commands-use-allow") == false){
+				if (flag.equalsIgnoreCase("cmd-allowed-list") == false){
 					value[index] = value[index].toString().toUpperCase();
 				}
 				if (flagValues.get(player).contains(value[index].toString())){
@@ -1313,107 +1401,63 @@ public class WorldControlHandler {
 		return mSecs.get(player);
 	}
 	
-	public void messagePlacedBlockInformation(Player player, Block block, int page){
-		if (BlockDataFile.getCustomConfig().getString(parseLocationToString(block.getLocation()) + ".placed") == null){
+	public void messageBlockInformation(final Player player, Block block, int page){
+		if (BlockDataFile.getCustomConfig().getString(parseLocationToString(block.getLocation())) == null){
 			ChatUtili.sendTranslatedMessage(player, "&fNo block information for that location.");
 			return;
 		}
 		
-		player.sendMessage(ChatUtili.colorConvert("&7----- &6WorldInspect &7----- &c(" + parseLocationToString(block.getLocation()) + ")"));
-		blockDataList.put(player, BlockDataFile.getCustomConfig().getStringList(parseLocationToString(block.getLocation()) + ".placed"));
+		int RPP = RESULTS_PER_PAGE;
 		
-		if (Math.round(blockDataList.get(player).size()) < 6){
+		player.sendMessage(ChatUtili.colorConvert("&7----- &6WorldInspect &7----- &c(" + parseLocationToString(block.getLocation()) + ")"));
+		
+		blockDataList.put(player, BlockDataFile.getCustomConfig().getStringList(parseLocationToString(block.getLocation())));
+		
+		Collections.reverse(blockDataList.get(player));
+		
+		if (blockDataList.get(player).size() <= RPP){
 			for (blockDataLoop.put(player, 0); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
 				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
-				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fplaced &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &f" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[3] + " &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
 			}
 				player.sendMessage(ChatUtili.colorConvert("&fPage 1/1"));
 				player.sendMessage(ChatUtili.colorConvert("&7---------- "));
 				return;
 		}
 		
-		if (page > ((int) Math.round(blockDataList.get(player).size() / 5))){
+		if (page > ((int) Math.ceil((double) blockDataList.get(player).size() / (double) RPP))){
 			ChatUtili.sendTranslatedMessage(player, "&cInvalid page.");
 			player.sendMessage(ChatUtili.colorConvert("&7---------- "));
 			return;
 		}
 		
-		if (page == ((int) Math.round(blockDataList.get(player).size() / 5))){
-			for (blockDataLoop.put(player, ((page * 5) - 5)); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+		if (page == (Math.ceil(blockDataList.get(player).size() / RPP))){
+			for (blockDataLoop.put(player, ((page * RPP) - RPP)); blockDataLoop.get(player) < (page * RPP); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
 				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
-				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fplaced &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &f" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[3] + " &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
 			}
-				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.round(blockDataList.get(player).size() / 5))));
+				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.ceil((double) blockDataList.get(player).size() / (double) RPP))));
 				player.sendMessage(ChatUtili.colorConvert("&7---------- "));
 			return;
-		}
-		
-		if (blockDataList.get(player).size() > 5){
-			for (blockDataLoop.put(player, ((page * 5) - 5)); blockDataLoop.get(player) < ((page * 5) - 0); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
-				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
-				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fplaced &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
-			}
-				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.round(blockDataList.get(player).size() / 5))));		
 		}
 		else {
-			for (blockDataLoop.put(player, 0); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
-				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
-				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fplaced &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
-				}
-				player.sendMessage(ChatUtili.colorConvert("&fPage 1/1"));
-		}
-		player.sendMessage(ChatUtili.colorConvert("&7---------- "));
-	}
-	
-	public void messageBrokenBlockInformation(Player player, Block block, int page){
-		if (BlockDataFile.getCustomConfig().getString(parseLocationToString(block.getLocation()) + ".broken") == null){
-			ChatUtili.sendTranslatedMessage(player, "&fNo block information for that location.");
-			return;
-		}
-		
-		player.sendMessage(ChatUtili.colorConvert("&7----- &6WorldInspect &7----- &c(" + parseLocationToString(block.getLocation()) + ")"));
-		blockDataList.put(player, BlockDataFile.getCustomConfig().getStringList(parseLocationToString(block.getLocation()) + ".broken"));
-		
-		if (Math.round(blockDataList.get(player).size()) < 6){
-			for (blockDataLoop.put(player, 0); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
-				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
-				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fremoved &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+			if ((page * RPP) > blockDataList.get(player).size()){
+				for (blockDataLoop.put(player, ((page * RPP) - RPP)); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+						time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
+						player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &f" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[3] + " &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+					}
+						player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.ceil((double) blockDataList.get(player).size() / (double) RPP))));
 			}
-				player.sendMessage(ChatUtili.colorConvert("&fPage 1/1"));
-				player.sendMessage(ChatUtili.colorConvert("&7---------- "));
-				return;
-		}
-		
-		if (page > ((int) Math.round(blockDataList.get(player).size() / 5))){
-			ChatUtili.sendTranslatedMessage(player, "&cInvalid page.");
-			player.sendMessage(ChatUtili.colorConvert("&7---------- "));
-			return;
-		}
-		
-		if (page == ((int) Math.round(blockDataList.get(player).size() / 5))){
-			for (blockDataLoop.put(player, ((page * 5) - 5)); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
-				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
-				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fremoved &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+			else {
+				for (blockDataLoop.put(player, ((page * RPP) - RPP)); blockDataLoop.get(player) < (page * RPP); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
+					time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
+					player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &f" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[3] + " &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
+				}
+					player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.ceil((double) blockDataList.get(player).size() / (double) RPP))));
 			}
-				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.round(blockDataList.get(player).size() / 5))));
-				player.sendMessage(ChatUtili.colorConvert("&7---------- "));
-			return;
 		}
 		
-		if (blockDataList.get(player).size() > 5){
-			for (blockDataLoop.put(player, ((page * 5) - 5)); blockDataLoop.get(player) < ((page * 5) - 0); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
-				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
-				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fremoved &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
-				}
-				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + ((int) Math.round(blockDataList.get(player).size() / 5))));
-		}
-		else {
-			for (blockDataLoop.put(player, 0); blockDataLoop.get(player) < blockDataList.get(player).size(); blockDataLoop.put(player, blockDataLoop.get(player) + 1)){
-				time.put(player, System.currentTimeMillis() - Long.parseLong(blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[1]));
-				player.sendMessage(ChatUtili.colorConvert("&7" + getBlockTime(player, time) + " &f- &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[0] + " &fremoved &3" + blockDataList.get(player).get(blockDataLoop.get(player)).split("#")[2]));	
-				}
-				player.sendMessage(ChatUtili.colorConvert("&fPage 1/1"));
-		}
+
 		player.sendMessage(ChatUtili.colorConvert("&7---------- "));
 	}
 	
@@ -1511,6 +1555,20 @@ public class WorldControlHandler {
 				
 			}
 		}, 25, 25);
+	}
+	
+	public int excuteNewThread(Runnable runnable){
+		return Bukkit.getScheduler().runTaskAsynchronously(getWorldControl(), runnable).getTaskId();
+	}
+	
+	public void closeThread(int task){
+		if (Bukkit.getScheduler().isCurrentlyRunning(task) || Bukkit.getScheduler().isQueued(task)){
+			Bukkit.getScheduler().cancelTask(task);
+			logConsole("Task #" + task + " has been cancelled!");
+		}
+		else {
+			logConsole("Task #" + task + " is not a valid task id.");
+		}
 	}
 	
 	public void logConsole(String message){

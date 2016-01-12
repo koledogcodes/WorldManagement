@@ -11,8 +11,10 @@ public class PacketOutHoverChat {
 		
 	}
 	
+	String example = "v1_8_R1";
+	
 	public void sendHoverMessage(Player player, String firstMessage, String extraHoverableMessage, String hoverMessageDialog){
-		if (Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[2].replaceAll("R", "")) >= 3){
+		if (Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[1].replaceAll("R", "")) >= 8 && Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[2].replaceAll("R", "")) >= 3){
 			try {
 				firstMessage = ChatColor.translateAlternateColorCodes('&', firstMessage);
 				extraHoverableMessage = ChatColor.translateAlternateColorCodes('&', extraHoverableMessage);

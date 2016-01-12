@@ -340,11 +340,8 @@ public class worldControlCommand implements CommandExecutor {
 		else if (args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l")){
 			if (WorldControlHandler.blockInspectionLocation.containsKey(player)){
 				try {
-					if (WorldControlHandler.blockInspectionLocationType.get(player).equalsIgnoreCase("PLACED")){
-						WorldControl.messagePlacedBlockInformation(player, WorldControlHandler.blockInspectionLocation.get(player).getBlock(), Integer.parseInt(args[1]));
-					}
-					else if (WorldControlHandler.blockInspectionLocationType.get(player).equalsIgnoreCase("REMOVED")){
-						WorldControl.messageBrokenBlockInformation(player, WorldControlHandler.blockInspectionLocation.get(player).getBlock(), Integer.parseInt(args[1]));
+					if (WorldControlHandler.blockInspectionLocationType.get(player).equalsIgnoreCase("LIST")){
+						WorldControl.messageBlockInformation(player, WorldControlHandler.blockInspectionLocation.get(player).getBlock(), Integer.parseInt(args[1]));
 					}
 					else {
 						
@@ -462,6 +459,7 @@ public class worldControlCommand implements CommandExecutor {
 					return true;
 				}
 				
+				ChatUtili.messagePrefix = "&8[&dWF&8]";
 				ChatUtili.sendTranslatedMessage(player, "&7World '&a" + args[1] + "&7' flag '&a" + args[2] + "&7' is: &e" + WorldControl.getWorldSettingValue(args[1], args[2].toLowerCase()));
 			}
 			else {
