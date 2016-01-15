@@ -80,7 +80,7 @@ public class BukkitWorldControlLogEvent implements Listener {
 		WorldControl.messageBlockInformation(player, e.getClickedBlock(), 1);
 		}
 		else if (e.getAction() == Action.LEFT_CLICK_BLOCK){
-		ChatUtili.sendTranslatedMessage(player, "&cYou cannot break block in inspection mode!");
+		ChatUtili.sendTranslatedMessage(player, "&cYou cannot break blocks in inspection mode!");
 		e.setCancelled(true);
 		}
 		else {

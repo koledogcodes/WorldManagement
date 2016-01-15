@@ -70,7 +70,7 @@ public class BukkitWorldControlPortalEvent implements Listener {
 		
 		if (WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation())) == null){ return; }
 		
-		//if (e.getFrom().getBlockX() == e.getTo().getBlockX() && e.getFrom().getBlockY() == e.getTo().getBlockY() && e.getFrom().getBlockZ() == e.getTo().getBlockZ()){ return; }
+		if (e.getFrom().getBlockX() == e.getTo().getBlockX() && e.getFrom().getBlockY() == e.getTo().getBlockY() && e.getFrom().getBlockZ() == e.getTo().getBlockZ()){ return; }
 		
 		if (player.hasPermission("worldcontrol.portal.*") == false){
 			if (player.hasPermission("worldcontrol.portal." + WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation())))){

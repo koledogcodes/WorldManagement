@@ -273,11 +273,16 @@ public class worldControlCommand implements CommandExecutor {
 			}
 		}
 		else if (args[0].equalsIgnoreCase("flag")){
-			if (WorldControl.worldFolderExists(args[1])){
+			if (args[1].equals("__global__")){
 				ChatUtili.sendTranslatedMessage(player, "&cPlease provide a flag to modify for world '" + args[1] + "'.");
 			}
 			else {
-				ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+				if (WorldControl.worldFolderExists(args[1])){
+					ChatUtili.sendTranslatedMessage(player, "&cPlease provide a flag to modify for world '" + args[1] + "'.");
+				}
+				else {
+					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+				}
 			}
 		}
 		else if (args[0].equalsIgnoreCase("?") || args[0].equalsIgnoreCase("help")){
@@ -437,12 +442,13 @@ public class worldControlCommand implements CommandExecutor {
 				}
 			}
 			else if (args[0].equalsIgnoreCase("flag")){
-				if (WorldControl.worldFolderExists(args[1])){
+				if (WorldControl.worldFolderExists(args[1]) || args[1].equals("__global__")){
 					if (args[2].equalsIgnoreCase("?")){
-						ChatUtili.sendTranslatedMessage(player, "&9World Flags: &a" + WorldControl.getWorldFlagsMessage(args[1]));
+						ChatUtili.sendSimpleTranslatedMessage(player, "&9World Flags: &a" + WorldControl.getWorldFlagsMessage(WorldControl.getAllWorlds().get(0)));
 					}
 					else {
-						ChatUtili.sendTranslatedMessage(player, "&cPlease provide a value.");					}
+						ChatUtili.sendTranslatedMessage(player, "&cPlease provide a value.");					
+					}
 				}
 				else {
 					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
@@ -470,8 +476,17 @@ public class worldControlCommand implements CommandExecutor {
 		
 		if (args.length >= 4){
 			if (args[0].equalsIgnoreCase("flag")){
-				if (WorldControl.worldFolderExists(args[1])){
-					WorldControl.setWorldFlag(player, args[1], args[2], args);
+				if (WorldControl.worldFolderExists(args[1]) || args[1].equals("__global__")){
+					if (args[1].equals("__global__")){
+						for (String world: WorldControl.getAllWorlds()){
+							WorldControl.setWorldFlag(player, world, args[2], args);
+						}
+						ChatUtili.messagePrefix = "&8[&dWF&8]";
+						ChatUtili.sendTranslatedMessage(player, "&7Flag '&e" + args[2] + "&7' global value has been set!");
+					}
+					else {
+						WorldControl.setWorldFlag(player, args[1], args[2], args);
+					}
 				}
 				else {
 					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");

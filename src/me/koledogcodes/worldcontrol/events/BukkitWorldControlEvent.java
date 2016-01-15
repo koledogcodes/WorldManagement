@@ -17,6 +17,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
@@ -661,6 +662,24 @@ public class BukkitWorldControlEvent implements Listener {
 			else {
 				return;
 			}
+		}
+	}
+	
+	@EventHandler
+	public void onLiquidFlow(BlockFromToEvent e){
+		if (WorldControl.worldContainsSettings(e.getBlock().getWorld().getName())){
+			if (e.getBlock().getType() == Material.WATER){
+				if ((boolean) WorldControl.getWorldSettingValue(e.getBlock().getWorld().getName(), "water-flow") == false){
+					e.setCancelled(true);
+				}
+			}
+			
+			if (e.getBlock().getType() == Material.LAVA){
+				if ((boolean) WorldControl.getWorldSettingValue(e.getBlock().getWorld().getName(), "lava-flow") == false){
+					e.setCancelled(true);
+				}
+			}
+
 		}
 	}
 }

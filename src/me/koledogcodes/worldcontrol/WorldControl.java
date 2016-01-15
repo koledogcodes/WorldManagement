@@ -27,6 +27,7 @@ import me.koledogcodes.worldcontrol.events.BukkitWorldControlHandleEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlLogEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlPortalEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlSignEvent;
+import me.koledogcodes.worldcontrol.events.WorldControlEventCaller;
 import me.koledogcodes.worldcontrol.handler.BlockVector;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
 import me.koledogcodes.worldcontrol.handler.WorldControlHandler;
@@ -88,6 +89,7 @@ public class WorldControl extends JavaPlugin {
 		new BlockVector();
 		new BlockDataFile (this);
 		new WorldFlagConvertor(this);
+		new WorldControlEventCaller(this);
 		
 		saveDefaultConfig();
 		reloadConfig();
@@ -127,6 +129,7 @@ public class WorldControl extends JavaPlugin {
 		handler.logConsole("------------------------------------");
 		handler.generateConfiguration();
 		handler.startAutosave();
+		WorldControlEventCaller.start();
 	}
 	
 	public void onDisable(){

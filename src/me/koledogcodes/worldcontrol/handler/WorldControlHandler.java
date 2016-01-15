@@ -37,9 +37,7 @@ import me.koledogcodes.worldcontrol.configs.WorldPortalLocationFile;
 import me.koledogcodes.worldcontrol.configs.WorldSignFile;
 import me.koledogcodes.worldcontrol.configs.WorldSpawnFile;
 import me.koledogcodes.worldcontrol.configs.WorldWhitelistFile;
-import me.koledogcodes.worldcontrol.custom.events.WorldControlLoadWorldEvent;
 import me.koledogcodes.worldcontrol.custom.events.WorldControlPreUnloadWorldEvent;
-import me.koledogcodes.worldcontrol.custom.events.WorldControlUnloadWorldEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlEvent;
 import me.koledogcodes.worldcontrol.timer.WorldControlTimer;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutBlockAction;
@@ -125,7 +123,7 @@ public class WorldControlHandler {
 				logConsole("World '" + world + "' has been loaded.");
 				if (player != null){
 					ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' has been loaded!");
-					Bukkit.getServer().getPluginManager().callEvent(new WorldControlLoadWorldEvent(player, world));
+					//Bukkit.getServer().getPluginManager().callEvent(new WorldControlLoadWorldEvent(player, world));
 				}
 			}
 			else {
@@ -435,6 +433,8 @@ public class WorldControlHandler {
 					setWorldConfigOption(player, "world-enderchest-bind", player.getWorld().getName());
 					setWorldConfigOption(player, "leaves-decay", false);
 					setWorldConfigOption(player, "no-hunger", false);
+					setWorldConfigOption(player, "lava-flow", false);
+					setWorldConfigOption(player, "water-flow", false);
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 				ChatUtili.sendTranslatedMessage(player, "&aGenerated config for world '" + world.get(player) + "'.");
@@ -515,6 +515,8 @@ public class WorldControlHandler {
 					setWorldConfigOption(world, "world-enderchest-bind", world);
 					setWorldConfigOption(world, "leaves-decay", false);
 					setWorldConfigOption(world, "no-hunger", false);
+					setWorldConfigOption(world, "lava-flow", false);
+					setWorldConfigOption(world, "water-flow", false);
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 		}
@@ -575,13 +577,13 @@ public class WorldControlHandler {
 	}
 	
 	public void overrideWorldConfigOption(String world, String worldSetting, Object value){
-		if (WorldConfigFile.getCustomConfig().getString(world  + "." +  worldSetting) != null){
-			WorldConfigFile.getCustomConfig().set(world  + "." +  worldSetting, value);
-			WorldConfigFile.saveCustomConfig();
-		}
-		else {
-			return;
-		}
+			if (WorldConfigFile.getCustomConfig().getString(world  + "." +  worldSetting) != null){
+				WorldConfigFile.getCustomConfig().set(world  + "." +  worldSetting, value);
+				WorldConfigFile.saveCustomConfig();
+			}
+			else {
+				return;
+			}
 		
 		worldSetting = null;
 		value = null;
@@ -624,7 +626,7 @@ public class WorldControlHandler {
 			else {
 				Bukkit.getServer().getPluginManager().callEvent(new WorldControlPreUnloadWorldEvent(player, world, Bukkit.getServer().getWorld(world).getPlayers()));
 				Bukkit.unloadWorld(world, save);
-				Bukkit.getServer().getPluginManager().callEvent(new WorldControlUnloadWorldEvent(player, world));
+				//Bukkit.getServer().getPluginManager().callEvent(new WorldControlUnloadWorldEvent(player, world));
 				logConsole("World '" + world + "' has unloaded.");
 				if (player != null){
 				ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' has been unloaded!");	
@@ -1058,6 +1060,10 @@ public class WorldControlHandler {
 		return list;
 	}
 	
+	public List<Object> getDestinationsList(){
+		return Arrays.asList(WorldPortalFile.getCustomConfig().getConfigurationSection("destinations").getKeys(false).toArray());
+	}
+	
 	@SuppressWarnings("unchecked")
 	public void setCurrentWorldInventory(Player player, GameMode mode){
 		playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
@@ -1333,11 +1339,12 @@ public class WorldControlHandler {
 	
 		for (int i = 0; i < keys.length; i++){
 			if (i == (keys.length - 1)){
-				string += keys[i] + "&c.";
+				string += colorTranslate(keys[i] + "&c.");
 			}
 			else {
-				string += keys[i] + "&c,&a ";
+				string += colorTranslate(keys[i] + "&c,&a ");
 			}
+			
 		}
 		
 		return string;
@@ -1413,6 +1420,12 @@ public class WorldControlHandler {
 		
 		blockDataList.put(player, BlockDataFile.getCustomConfig().getStringList(parseLocationToString(block.getLocation())));
 		
+		if (page <= 0 ||page > ((int) Math.ceil((double) blockDataList.get(player).size() / (double) RPP))){
+			ChatUtili.sendTranslatedMessage(player, "&cInvalid page.");
+			player.sendMessage(ChatUtili.colorConvert("&7---------- "));
+			return;
+		}
+		
 		Collections.reverse(blockDataList.get(player));
 		
 		if (blockDataList.get(player).size() <= RPP){
@@ -1423,12 +1436,6 @@ public class WorldControlHandler {
 				player.sendMessage(ChatUtili.colorConvert("&fPage 1/1"));
 				player.sendMessage(ChatUtili.colorConvert("&7---------- "));
 				return;
-		}
-		
-		if (page > ((int) Math.ceil((double) blockDataList.get(player).size() / (double) RPP))){
-			ChatUtili.sendTranslatedMessage(player, "&cInvalid page.");
-			player.sendMessage(ChatUtili.colorConvert("&7---------- "));
-			return;
 		}
 		
 		if (page == (Math.ceil(blockDataList.get(player).size() / RPP))){
@@ -1554,21 +1561,11 @@ public class WorldControlHandler {
 				}
 				
 			}
-		}, 25, 25);
+		}, 12, 13);
 	}
 	
-	public int excuteNewThread(Runnable runnable){
-		return Bukkit.getScheduler().runTaskAsynchronously(getWorldControl(), runnable).getTaskId();
-	}
-	
-	public void closeThread(int task){
-		if (Bukkit.getScheduler().isCurrentlyRunning(task) || Bukkit.getScheduler().isQueued(task)){
-			Bukkit.getScheduler().cancelTask(task);
-			logConsole("Task #" + task + " has been cancelled!");
-		}
-		else {
-			logConsole("Task #" + task + " is not a valid task id.");
-		}
+	public void excuteNewThread(Runnable runnable){
+		runnable.run();
 	}
 	
 	public void logConsole(String message){

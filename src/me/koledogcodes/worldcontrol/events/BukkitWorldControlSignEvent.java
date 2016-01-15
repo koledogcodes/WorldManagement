@@ -92,21 +92,29 @@ public class BukkitWorldControlSignEvent implements Listener {
 	//TODO Player Join World
 	@EventHandler
 	public void worldChangeEvent(PlayerChangedWorldEvent e){
-		List<String> signs = WorldControl.getAllWorldControlSignLoc();
-		for (int i = 0; i < signs.size(); i++){
-			try {
-				if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
-					Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
-					if (WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("PLAYER_LIST")){
-						s.setLine(2, WorldControl.colorTranslate("&a" + Bukkit.getWorld(ChatColor.stripColor(s.getLine(1))).getPlayers().size() + "/" + WorldControl.getWorldSettingValue(ChatColor.stripColor(s.getLine(1)), "player-limit")));
-						s.update();
+		WorldControl.excuteNewThread(new Runnable(){
+			@Override
+			public void run() {
+			
+				List<String> signs = WorldControl.getAllWorldControlSignLoc();
+				for (int i = 0; i < signs.size(); i++){
+					try {
+						if (WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState() instanceof Sign){
+							Sign s = (Sign) WorldControl.parseStringToLocation(signs.get(i)).getBlock().getState();
+							if (WorldControl.getWorldControlSignType(WorldControl.parseStringToLocation(signs.get(i))).toString().equalsIgnoreCase("PLAYER_LIST")){
+								s.setLine(2, WorldControl.colorTranslate("&a" + Bukkit.getWorld(ChatColor.stripColor(s.getLine(1))).getPlayers().size() + "/" + WorldControl.getWorldSettingValue(ChatColor.stripColor(s.getLine(1)), "player-limit")));
+								s.update();
+							}
+						}
+					}
+					catch (Exception exc){
+						WorldControl.logConsole("Failed to set worldcontrol sign at (" + formatParseLocation(signs.get(i)) + ")");
 					}
 				}
+				
+				return;
 			}
-			catch (Exception exc){
-				WorldControl.logConsole("Failed to set worldcontrol sign at (" + signs.get(i) + ")");
-			}
-		}
+		});
 	}
 	
 	//TODO WorldControl Unload World
@@ -125,7 +133,7 @@ public class BukkitWorldControlSignEvent implements Listener {
 				}
 			}
 			catch (Exception exc){
-				WorldControl.logConsole("Failed to set worldcontrol sign at (" + signs.get(i) + ")");
+				WorldControl.logConsole("Failed to set worldcontrol sign at (" + formatParseLocation(signs.get(i)) + ")");
 			}
 		}
 	}
@@ -145,7 +153,7 @@ public class BukkitWorldControlSignEvent implements Listener {
 				}
 			}
 			catch (Exception exc){
-				WorldControl.logConsole("Failed to set worldcontrol sign at (" + signs.get(i) + ")");
+				WorldControl.logConsole("Failed to set worldcontrol sign at (" + formatParseLocation(signs.get(i)) + ")");
 			}
 	    }
 	}
@@ -160,4 +168,12 @@ public class BukkitWorldControlSignEvent implements Listener {
 		}
 	}
 	
+	private String formatParseLocation(String string){
+		String s = "";
+		s += "world:" + string.split(" ")[0] + " ";
+		s += "x:" + string.split(" ")[1] + " ";
+		s += "y:" + string.split(" ")[2] + " ";
+		s += "z:" + string.split(" ")[3];
+		return s;
+	}
 }
