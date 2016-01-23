@@ -1,7 +1,6 @@
 package me.koledogcodes.worldcontrol.handler;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,10 +27,13 @@ import org.bukkit.inventory.ItemStack;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.api.WorldControlSignType;
+import me.koledogcodes.worldcontrol.api.WorldData;
+import me.koledogcodes.worldcontrol.api.WorldGenerator;
 import me.koledogcodes.worldcontrol.configs.BlockDataFile;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.PlayerDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
+import me.koledogcodes.worldcontrol.configs.WorldDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldPortalFile;
 import me.koledogcodes.worldcontrol.configs.WorldPortalLocationFile;
 import me.koledogcodes.worldcontrol.configs.WorldSignFile;
@@ -89,6 +91,7 @@ public class WorldControlHandler {
 	private HashMap<Player, Integer> x = new HashMap<Player, Integer>();
 	private HashMap<Player, Integer> y = new HashMap<Player, Integer>();
 	private HashMap<Player, Integer> z = new HashMap<Player, Integer>();
+	private HashMap<CommandSender, Integer> i = new HashMap<CommandSender, Integer>();
 	private HashMap<Player, Integer> occurnaces = new HashMap<Player, Integer>();
 	private HashMap<Player, Block> block = new HashMap<Player, Block>();
 	public HashMap<Player, String> world = new HashMap<Player, String>();
@@ -119,7 +122,12 @@ public class WorldControlHandler {
 	public void loadWorld(Player player, String world){
 		if (worldFolderExists(world)){
 			if (worldExists(world) == false){
-				Bukkit.createWorld(new WorldCreator(world));
+				WorldData data = new WorldData(world);
+				WorldCreator loader = new WorldCreator(world);
+				loader.environment(data.getEnvironment());
+				loader.seed(data.getSeed());
+				loader.type(data.getWorldType());
+				Bukkit.createWorld(loader);
 				logConsole("World '" + world + "' has been loaded.");
 				if (player != null){
 					ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' has been loaded!");
@@ -148,7 +156,7 @@ public class WorldControlHandler {
 			return;
 		}
 		
-		if (worldExists(world)){
+		if (worldFolderExists(world)){
 			logConsole("Cannot create world '" + world + "' that already exists!");
 			ChatUtili.sendTranslatedMessage(player, "&cCannot create world '" + world + "' that already exists!");
 		}
@@ -171,7 +179,7 @@ public class WorldControlHandler {
 			return;
 		}
 		
-		if (worldExists(world)){
+		if (worldFolderExists(world)){
 			logConsole("Cannot create world '" + world + "' that already exists!");
 			ChatUtili.sendTranslatedMessage(player, "&cCannot create world '" + world + "' that already exists!");
 		}
@@ -191,7 +199,7 @@ public class WorldControlHandler {
 			return;
 		}
 		
-		if (worldExists(world)){
+		if (worldFolderExists(world)){
 			logConsole("Cannot create world '" + world + "' that already exists!");
 			ChatUtili.sendTranslatedMessage(player, "&cCannot create world '" + world + "' that already exists!");
 		}
@@ -212,7 +220,7 @@ public class WorldControlHandler {
 			return;
 		}
 		
-		if (worldExists(world)){
+		if (worldFolderExists(world)){
 			logConsole("Cannot create world '" + world + "' that already exists!");
 			ChatUtili.sendTranslatedMessage(player, "&cCannot create world '" + world + "' that already exists!");
 		}
@@ -234,7 +242,7 @@ public class WorldControlHandler {
 			return;
 		}
 		
-		if (worldExists(world)){
+		if (worldFolderExists(world)){
 			logConsole("Cannot create world '" + world + "' that already exists!");
 			ChatUtili.sendTranslatedMessage(player, "&cCannot create world '" + world + "' that already exists!");
 		}
@@ -280,7 +288,7 @@ public class WorldControlHandler {
 	public boolean worldFolderExists(String world){
 		File file = new File(world);
 		if (file.isDirectory() && blacklistFolders().contains(world) == false){
-			return true;
+			return isValidWorld(file.getPath());
 		}
 		else {
 			return false;
@@ -303,66 +311,93 @@ public class WorldControlHandler {
 		return blacklist;
 	}
 	
-	public String getAllWorldsStatus(){
-		String temp = "";
-		File getRoot = new File("plugins");
-		File file = new File(getRoot.getAbsoluteFile().getParentFile().getPath().toString());
-				
-		final List<String> directories = new ArrayList<String>();
-		file.list(new FilenameFilter() {
-			
-			@Override
-			public boolean accept(File dir, String name) {
-				File folders = new File(dir, name);
-				if (folders.isDirectory() && blacklistFolders().contains(folders.getName()) == false){
-					directories.add(folders.getName());
-				}
-				return false;
-			}
-		});
+	public void messageWorldsStatus(CommandSender player, int page){
+		List<String> worlds = getAllWorlds();
 		
+		if (page <= 0 || page > Math.ceil((double) worlds.size() / (double) RESULTS_PER_PAGE)){
+			ChatUtili.sendTranslatedMessage(player, "&cInvalid page!");
+			return;
+		}
 		
-		for (int i = 0; i < directories.size(); i++){
-			if (i == (directories.size() - 1)){
-				if (worldExists(directories.get(i))){
-					temp += "&a" + directories.get(i) + " &b(loaded)";
+		player.sendMessage(ChatUtili.colorConvert("&7----- &6Worlds &7----- &c(" + worlds.size() + " worlds in total)"));
+
+		if ((page * RESULTS_PER_PAGE) > worlds.size()){
+			for (i.put(player, (page * RESULTS_PER_PAGE) - RESULTS_PER_PAGE); i.get(player) < (worlds.size()); i.put(player, i.get(player) + 1)){
+				if (worldExists(worlds.get(i.get(player)))){
+					ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(loaded)");
 				}
 				else {
-					temp += "&a" + directories.get(i) + " &b(not loaded)";
-				}	
+					ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(not loaded)");
+				}
 			}
-			else {
-				if (worldExists(directories.get(i))){
-					temp += "&a" + directories.get(i) + " &b(loaded)&c, &a";
+		}
+		else {
+			for (i.put(player, (page * RESULTS_PER_PAGE) - RESULTS_PER_PAGE); i.get(player) < (page * RESULTS_PER_PAGE); i.put(player, i.get(player) + 1)){
+				if (worldExists(worlds.get(i.get(player)))){
+					ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(loaded)");
 				}
 				else {
-					temp += "&a" + directories.get(i) + " &b(not loaded)&c, &a";
+					ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(not loaded)");
 				}
 			}
 		}
 		
-		return temp;
+		player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + (int) (Math.ceil((double) worlds.size() / (double) RESULTS_PER_PAGE)) ));
+		player.sendMessage(ChatUtili.colorConvert("&7---------- "));
 	}
 	
 	public List<String> getAllWorlds(){
 		File getRoot = new File("plugins");
 		File file = new File(getRoot.getAbsoluteFile().getParentFile().getPath().toString());
-				
-		final List<String> directories = new ArrayList<String>();
-		file.list(new FilenameFilter() {
-			
-			@Override
-			public boolean accept(File dir, String name) {
-				File folders = new File(dir, name);
-				if (folders.isDirectory() && blacklistFolders().contains(folders.getName()) == false){
-					directories.add(folders.getName());
+		File[] getFiles = file.listFiles();
+		
+		List<String> directories = new ArrayList<String>();
+		
+		for (File f: getFiles){
+			if (f.isDirectory() && blacklistFolders().contains(f.getName()) == false){
+				if (isValidWorld(f.getPath())){
+					directories.add(f.getName());
 				}
-				return false;
+				else {
+					continue;
+				}
 			}
-		});
+		}
+		
+		return directories;
+	}
+	
+	public List<String> getAllLoadedWorlds(){
+		File getRoot = new File("plugins");
+		File file = new File(getRoot.getAbsoluteFile().getParentFile().getPath().toString());
+		File[] getFiles = file.listFiles();
+		
+		final List<String> directories = new ArrayList<String>();
+		
+		for (File f: getFiles){
+			if (f.isDirectory() && blacklistFolders().contains(f.getName()) == false){
+				if (isValidWorld(f.getPath())){
+					if (worldExists(f.getName())){
+						directories.add(f.getName());
+					}
+				}
+				else {
+					continue;
+				}
+			}
+		}
 		
 		
 		return directories;
+	}
+	
+	private boolean isValidWorld(String dir){
+		if (new File(dir, "uid.dat").exists()){
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 	
 	public void generateWorldConfiguration(Player player){
@@ -431,10 +466,14 @@ public class WorldControlHandler {
 					setWorldConfigOption(player, "default-gamemode", "survival");
 					setWorldConfigOption(player, "world-inventory-bind", player.getWorld().getName());
 					setWorldConfigOption(player, "world-enderchest-bind", player.getWorld().getName());
+					setWorldConfigOption(player, "nether-world", player.getWorld().getName().replaceAll("_nether", "") + "_nether");
+					setWorldConfigOption(player, "overworld-world", player.getWorld().getName().replaceAll("_nether", ""));
 					setWorldConfigOption(player, "leaves-decay", false);
 					setWorldConfigOption(player, "no-hunger", false);
 					setWorldConfigOption(player, "lava-flow", false);
 					setWorldConfigOption(player, "water-flow", false);
+					setWorldConfigOption(player, "can-eat", true);
+					setWorldConfigOption(player, "can-eat-list", new String[]{});
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 				ChatUtili.sendTranslatedMessage(player, "&aGenerated config for world '" + world.get(player) + "'.");
@@ -513,10 +552,14 @@ public class WorldControlHandler {
 					setWorldConfigOption(world, "default-gamemode", "survival");
 					setWorldConfigOption(world, "world-inventory-bind", world);
 					setWorldConfigOption(world, "world-enderchest-bind", world);
+					setWorldConfigOption(world, "nether-world", world.replaceAll("_nether", "") + "_nether");
+					setWorldConfigOption(world, "overworld-world", world.replaceAll("_nether", ""));
 					setWorldConfigOption(world, "leaves-decay", false);
 					setWorldConfigOption(world, "no-hunger", false);
 					setWorldConfigOption(world, "lava-flow", false);
 					setWorldConfigOption(world, "water-flow", false);
+					setWorldConfigOption(world, "can-eat", true);
+					setWorldConfigOption(world, "can-eat-list", new String[]{});
 					WorldConfigFile.saveCustomConfig();
 					WorldConfigFile.reloadCustomConfig();
 		}
@@ -642,7 +685,7 @@ public class WorldControlHandler {
 		
 	}
 	
-	public void copyWorld(Player player, String oldWorld, String newWorld){
+	public void copyWorld(final Player player, final String oldWorld, final String newWorld){
 		if (worldFolderExists(oldWorld)){
 			if (worldExists(oldWorld)){
 				WorldCreator creator = new WorldCreator(newWorld);
@@ -1278,7 +1321,7 @@ public class WorldControlHandler {
 				overrideWorldConfigOption(world, flag, Integer.parseInt(value[index].toString()));
 				ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7has been set to: &e" + value[index]);
 			}
-			else if (flag.equalsIgnoreCase("block-place-list") || flag.equalsIgnoreCase("block-break-list") ||  flag.equalsIgnoreCase("mob-spawn-list") || flag.equalsIgnoreCase("cmd-allowed-list")){
+			else if (flag.equalsIgnoreCase("block-place-list") || flag.equalsIgnoreCase("block-break-list") ||  flag.equalsIgnoreCase("mob-spawn-list") || flag.equalsIgnoreCase("cmd-allowed-list") || flag.equalsIgnoreCase("can-eat-list")){
 				flagValues.put(player, ((List<String>) getWorldSettingValue(world, flag)));
 				if (flag.equalsIgnoreCase("cmd-allowed-list") == false){
 					value[index] = value[index].toString().toUpperCase();
@@ -1339,7 +1382,7 @@ public class WorldControlHandler {
 	
 		for (int i = 0; i < keys.length; i++){
 			if (i == (keys.length - 1)){
-				string += colorTranslate(keys[i] + "&c.");
+				string += colorTranslate(keys[i] + "&c");
 			}
 			else {
 				string += colorTranslate(keys[i] + "&c,&a ");
@@ -1552,8 +1595,10 @@ public class WorldControlHandler {
 						cancel();
 					}
 					else {
-						PacketOutBlockAction packet = new PacketOutBlockAction();
-						packet.sendBlockAction(player, loc, "ENDER_CHEST", 1, 1);
+						for (Player pl: Bukkit.getServer().getOnlinePlayers()){
+							PacketOutBlockAction packet = new PacketOutBlockAction();
+							packet.sendBlockAction(pl, loc, "ENDER_CHEST", 1, 1);
+						}
 					}
 				}
 				else {
@@ -1566,6 +1611,63 @@ public class WorldControlHandler {
 	
 	public void excuteNewThread(Runnable runnable){
 		runnable.run();
+	}
+	
+	public void generateCustomWorld(CommandSender output, String newWorld, WorldGenerator gen){
+		if (worldFolderExists(newWorld)){
+			ChatUtili.sendTranslatedMessage(output, "&cCannot generate world '" + newWorld + "' in an existing world!");
+			return;
+		}
+		
+		WorldCreator c = new WorldCreator(newWorld);
+		switch (gen){
+			case PlotMe_DefaultGenerator:
+				c.generator(gen.name().replaceAll("_", "-"));
+				c.environment(Environment.NORMAL);
+				c.createWorld();
+				ChatUtili.sendTranslatedMessage(output, "&aGenerated plotme world '" + newWorld + "'.");
+			break;
+		}
+		
+	}
+	
+	public void forceGenerateCustomWorld(CommandSender output, String newWorld, String gen){
+		if (worldFolderExists(newWorld)){
+			ChatUtili.sendTranslatedMessage(output, "&cCannot generate world '" + newWorld + "' in an existing world!");
+			return;
+		}
+		
+		try {
+			WorldCreator c = new WorldCreator(newWorld);
+			c.generator(gen);
+			c.createWorld();
+			ChatUtili.sendTranslatedMessage(output, "&aGenerated " + gen + " world '" + newWorld + "'.");
+		}
+		catch (Exception e){
+			ChatUtili.sendSimpleTranslatedMessage(output, "&cFailed to generate world '" + newWorld + "'.");
+		}
+	}
+	
+	public List<String> getSupportedWorldGenerators(){
+		List<String> gens = new ArrayList<String>();
+		if (Bukkit.getServer().getPluginManager().isPluginEnabled("PlotMe") && Bukkit.getServer().getPluginManager().isPluginEnabled("PlotMe-DefaultGenerator")){
+			gens.add("PlotMe-DefaultGenerator");
+		}
+		return gens;
+	}
+	
+	public void modifyWorldEnviorment(String world, Environment env, WorldType type){
+		WorldDataFile.getCustomConfig().set(world + ".env", env.name().toUpperCase());
+		WorldDataFile.getCustomConfig().set(world + ".type", type.name().toUpperCase());
+		WorldDataFile.saveCustomConfig();
+	}
+	
+	public void generateWorldData(World world){
+		WorldDataFile.getCustomConfig().set(world.getName() + ".env", world.getEnvironment().name().toUpperCase());
+		WorldDataFile.getCustomConfig().set(world.getName() + ".type", world.getWorldType().name().toUpperCase());
+		WorldDataFile.getCustomConfig().set(world.getName() + ".seed", world.getSeed());
+		WorldDataFile.getCustomConfig().set(world.getName() + ".generate-strut", world.canGenerateStructures());
+		WorldDataFile.saveCustomConfig();
 	}
 	
 	public void logConsole(String message){

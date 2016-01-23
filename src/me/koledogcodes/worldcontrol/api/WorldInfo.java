@@ -34,6 +34,6 @@ public class WorldInfo {
 	}
 	
 	public Object getFlagValue(WorldFlag flag){
-		return WorldControl.getWorldSettingValue(world.getName(), flag.name().toLowerCase().replaceAll("_", "-"));
+		return WorldControl.getWorldSettingValue(world.getName(), WorldFlagConvertor.translateFlag(flag));
 	}
 }

@@ -14,7 +14,7 @@ public class PacketOutHoverChat {
 	String example = "v1_8_R1";
 	
 	public void sendHoverMessage(Player player, String firstMessage, String extraHoverableMessage, String hoverMessageDialog){
-		if (Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[1].replaceAll("R", "")) >= 8 && Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[2].replaceAll("R", "")) >= 3){
+		if (Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[1].replaceAll("R", "")) >= 8 && Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[2].replaceAll("R", "")) >= 2){
 			try {
 				firstMessage = ChatColor.translateAlternateColorCodes('&', firstMessage);
 				extraHoverableMessage = ChatColor.translateAlternateColorCodes('&', extraHoverableMessage);
@@ -25,7 +25,7 @@ public class PacketOutHoverChat {
 		        PacketHandler.sendPacket(player, packet);
 			} 
 			catch (Exception e) {
-				player.sendMessage(ChatColor.translateAlternateColorCodes('&', firstMessage + " &c(Hover &cFailed)"));
+				player.sendMessage(ChatColor.translateAlternateColorCodes('&', firstMessage + " &c1.8 (Hover &cFailed)"));
 			}
 		}
 		else {
@@ -42,7 +42,7 @@ public class PacketOutHoverChat {
 				PacketHandler.sendPacket(player, packet);
 	        } 
 	        catch (Exception e) {
-				player.sendMessage(ChatColor.translateAlternateColorCodes('&', firstMessage + " &c(Hover &cFailed)"));
+				player.sendMessage(ChatColor.translateAlternateColorCodes('&', firstMessage + " &c1.7 (Hover &cFailed)"));
 
 			} 
 		}	

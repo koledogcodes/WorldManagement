@@ -7,6 +7,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockFromToEvent;
@@ -80,7 +81,7 @@ public class BukkitWorldControlPortalEvent implements Listener {
 				Bukkit.getServer().getPluginManager().callEvent(new WorldControlPortalEvent(player, player.getLocation(), WorldControl.getPortalDestinationLocation(WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation()))), WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation()))));
 				WorldControlHandler.portalTeleportInstance.put(player, true);
 				player.teleport(WorldControl.getPortalDestinationLocation(WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation()))));
-				ChatUtili.sendTranslatedMessage(player, ConfigFile.getCustomConfig().getString("portal-teleport-message").replaceAll("<player>", player.getName()));
+				ChatUtili.sendSimpleTranslatedMessage(player, ConfigFile.getCustomConfig().getString("portal-teleport-message").replaceAll("<player>", player.getName()));
 			}
 			else {
 				ChatUtili.sendTranslatedMessage(player, "&cYou do not have permission to use this portal.");
@@ -88,12 +89,12 @@ public class BukkitWorldControlPortalEvent implements Listener {
 		}
 		else {
 			player.teleport(WorldControl.getPortalDestinationLocation(WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation()))));
-			ChatUtili.sendTranslatedMessage(player, ConfigFile.getCustomConfig().getString("portal-teleport-message").replaceAll("<player>", player.getName()));
+			ChatUtili.sendSimpleTranslatedMessage(player, ConfigFile.getCustomConfig().getString("portal-teleport-message").replaceAll("<player>", player.getName()));
 		}
 	}
 	
 	//TODO Liquid Flow Out [PORTAL]
-	@EventHandler
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onLiquidFlow(BlockFromToEvent e){
 		if (e.getBlock().getType() == Material.GOLD_BLOCK && (e.getToBlock().getType() == Material.PORTAL || e.getToBlock().getType() == Material.ENDER_PORTAL)){ e.setCancelled(true); }
 		if (WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlock().getLocation())) == null){ return; }

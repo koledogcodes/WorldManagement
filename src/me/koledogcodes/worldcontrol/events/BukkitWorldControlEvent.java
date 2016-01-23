@@ -33,6 +33,7 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -231,7 +232,7 @@ public class BukkitWorldControlEvent implements Listener {
 	public void onMobSpawn(CreatureSpawnEvent e){
 		if (WorldControl.worldContainsSettings(e.getEntity().getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn")){
-				  if (((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn-list")).contains("-" + e.getEntity().getType().getTypeId()) || ((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn-list")).contains("-" + e.getEntity().getType().name())){
+				  if (((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn-list")).contains(String.valueOf("-" + e.getEntity().getType().getTypeId())) || ((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn-list")).contains("-" + e.getEntity().getType().name())){
 					  e.setCancelled(true); 
 				  }
 				  else {
@@ -239,7 +240,7 @@ public class BukkitWorldControlEvent implements Listener {
 				  } 
 			  }
 			  else {
-				  if (((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn-list")).contains(e.getEntity().getType().getTypeId()) || ((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn-list")).contains(e.getEntity().getType().name())){
+				  if (((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn-list")).contains(String.valueOf(e.getEntity().getType().getTypeId())) || ((List<String>) WorldControl.getWorldSettingValue(e.getEntity().getWorld().getName(), "mob-spawn-list")).contains(e.getEntity().getType().name())){
 					  return;
 				  }
 				  else {
@@ -456,32 +457,36 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler 
 	public void onPlayerPortalTeleport(PlayerPortalEvent e){
 		Player player = e.getPlayer();
-		if (player.hasPermission("worldcontrol.override.*")){ return; }
 		if (e.getCause().equals(TeleportCause.NETHER_PORTAL)){
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "nether-portal-teleport")){
 				try {
+					e.useTravelAgent(true);
+					
 					if (player.getWorld().getEnvironment().equals(Environment.NORMAL)){
 						TravelAgent travel = e.getPortalTravelAgent();
 						Location newLoc = player.getLocation().clone();
-						newLoc.setWorld(Bukkit.getWorld(player.getWorld().getName() + "_nether"));
-						travel.setSearchRadius(5);
+						newLoc.setWorld(Bukkit.getWorld((String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "nether-world")));
+						travel.setSearchRadius(50);
 						travel.findOrCreate(newLoc);
 						
 						e.useTravelAgent(true);
 						e.setPortalTravelAgent(travel);
 						e.setTo(newLoc);
-					}				
+					}	
 					else if (player.getWorld().getEnvironment().equals(Environment.NETHER)){
 						TravelAgent travel = e.getPortalTravelAgent();
 						Location newLoc = player.getLocation().clone();
-						newLoc.setWorld(Bukkit.getWorld(player.getWorld().getName().replaceAll("_nether", "")));
-						travel.setSearchRadius(5);
+						newLoc.setWorld(Bukkit.getWorld((String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "overworld-world")));
+						travel.setSearchRadius(50);
 						travel.findOrCreate(newLoc);
 						
 						e.useTravelAgent(true);
 						e.setPortalTravelAgent(travel);
 						e.setTo(newLoc);
+					}
+					else {
+						ChatUtili.sendTranslatedMessage(player, "&cUnknown Environment!");
 					}
 				}
 				catch (Exception exc){
@@ -495,6 +500,12 @@ public class BukkitWorldControlEvent implements Listener {
 			}
 		}
 	   }
+		else if (e.getCause().equals(TeleportCause.END_PORTAL)){
+			return;
+		}
+		else {
+			ChatUtili.sendTranslatedMessage(player, "&cUnknown teleport cause!");
+		}
 	}
 	
 	//TODO Nether Portal Create [SETTING]
@@ -665,21 +676,46 @@ public class BukkitWorldControlEvent implements Listener {
 		}
 	}
 	
-	@EventHandler
+	//TODO Liquid Flow [SETTING]
+	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
 	public void onLiquidFlow(BlockFromToEvent e){
 		if (WorldControl.worldContainsSettings(e.getBlock().getWorld().getName())){
-			if (e.getBlock().getType() == Material.WATER){
-				if ((boolean) WorldControl.getWorldSettingValue(e.getBlock().getWorld().getName(), "water-flow") == false){
+			if (e.getBlock().getType() == Material.STATIONARY_WATER){
+				if (((boolean) WorldControl.getWorldSettingValue(e.getBlock().getWorld().getName(), "water-flow")) == false){
 					e.setCancelled(true);
 				}
 			}
 			
-			if (e.getBlock().getType() == Material.LAVA){
-				if ((boolean) WorldControl.getWorldSettingValue(e.getBlock().getWorld().getName(), "lava-flow") == false){
+			if (e.getBlock().getType() == Material.STATIONARY_LAVA){
+				if (((boolean) WorldControl.getWorldSettingValue(e.getBlock().getWorld().getName(), "lava-flow")) == false){
 					e.setCancelled(true);
 				}
 			}
 
+		}
+	}
+	
+	//TODO Can Eat [SETTING]
+	@SuppressWarnings({ "unchecked", "deprecation" })
+	@EventHandler
+	public void onPlayerEat(PlayerItemConsumeEvent e){
+		Player player = e.getPlayer();
+		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
+			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "can-eat")){
+				if (((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "can-eat-list")).contains("-" + e.getItem().getType().name()) || ((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "can-eat-list")).contains(String.valueOf("-" + e.getItem().getTypeId()))){
+					e.setCancelled(true);
+				}
+				
+				return;
+			}
+			else {
+				if (((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "can-eat-list")).contains(e.getItem().getType().name()) || ((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "can-eat-list")).contains(String.valueOf(e.getItem().getTypeId()))){
+					return;
+				}
+				else {
+					e.setCancelled(true);
+				}
+			}
 		}
 	}
 }

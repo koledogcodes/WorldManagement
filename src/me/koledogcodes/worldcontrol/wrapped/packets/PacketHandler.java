@@ -55,7 +55,7 @@ public class PacketHandler {
 	} 
 	catch (ClassNotFoundException e){
 		e.printStackTrace();
-		System.out.println("[KinuxLib] Class Not Found: net.minecraft.server." + version + "." + string);
+		System.out.println("[WorldControl] Class Not Found: net.minecraft.server." + version + "." + string);
 		return null;
 	}
 	}
@@ -68,12 +68,8 @@ public class PacketHandler {
 	} 
 	catch (ClassNotFoundException e){
 		e.printStackTrace();
-		System.out.println("[KinuxLib] Class Not Found: org.bukkit.craftbukkit." + version + "." + string);
+		System.out.println("[WorldControl] Class Not Found: org.bukkit.craftbukkit." + version + "." + string);
 		return null;
 	}
-	}
-	
-	public static byte reverseByteNumber(float f){
-		return (byte) (f - f - f);
 	}
 }

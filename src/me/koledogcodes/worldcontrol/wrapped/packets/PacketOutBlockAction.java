@@ -14,7 +14,7 @@ public class PacketOutBlockAction {
 	}
 	
 	public void sendBlockAction(Player player, Location loc, String block, int arg0, int arg1){
-	try {
+	try {	
 		//Version 1.8 and up
 		if (Integer.valueOf(PacketHandler.getBukkitVersion().split("\\_")[1]) >= 8){
 			Constructor<?> posConstructor = PacketHandler.getNMSClass("BlockPosition").getConstructor(double.class, double.class, double.class);

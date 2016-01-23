@@ -77,7 +77,7 @@ public class worldControlCommand implements CommandExecutor {
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to tp to.");
 		}
 		else if (args[0].equalsIgnoreCase("list")){
-			ChatUtili.sendSimpleTranslatedMessage(player, "&6Worlds: &f" + WorldControl.getAllWorldsStatus());
+			WorldControl.messageWorldsStatus(player, 1);
 		}
 		else if (args[0].equalsIgnoreCase("createconf")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to create a config for.");
@@ -168,6 +168,9 @@ public class worldControlCommand implements CommandExecutor {
 		}
 		else if (args[0].equalsIgnoreCase("version")){
 			ChatUtili.sendTranslatedMessage(player, "&7You are currently using version '&a" + plugin.getDescription().getVersion() + "&7'!");
+		}
+		else if (args[0].equalsIgnoreCase("modify")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to modify.");
 		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
@@ -335,6 +338,7 @@ public class worldControlCommand implements CommandExecutor {
 			else if (args[1].equalsIgnoreCase("6")){
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc getflag <world> <flag>", " &b- &b(Hover)", "&aGets the flag value of a specfic world.");
+				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc modify <world> <environment> <world type>", " &b- &b(Hover)", "&aModifies a world environment and or world type \n&c&lWarning: &7When modifying worlds, houses etc will not be transferred to the new type or environment!");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc version", " &b- &b(Hover)", "&aGets the plugin version.");
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
@@ -389,6 +393,22 @@ public class worldControlCommand implements CommandExecutor {
 			
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world flag.");
 		}
+		else if (args[0].equalsIgnoreCase("list")){
+			try {
+				WorldControl.messageWorldsStatus(player, Integer.parseInt(args[1]));
+			}
+			catch (Exception e){
+				ChatUtili.sendTranslatedMessage(player, "&cInvalid page!");
+			}
+		}
+		else if (args[0].equalsIgnoreCase("modify")){
+			if (WorldControl.worldFolderExists(args[1])){
+				ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to enviorment and world type.");
+			}
+			else {
+				ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+			}
+		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
 		}
@@ -398,7 +418,7 @@ public class worldControlCommand implements CommandExecutor {
 		if (args.length == 3){
 			if (args[0].equalsIgnoreCase("create")){
 				try {
-					WorldControl.createWorld(player, args[1], WorldType.getByName(args[2].toUpperCase()));
+					WorldControl.createWorld(player, args[1], WorldType.valueOf(args[2].toUpperCase()));
 				}
 				catch (Exception e){
 					ChatUtili.sendTranslatedMessage(player, "&cInvalid argument given.");
@@ -468,6 +488,20 @@ public class worldControlCommand implements CommandExecutor {
 				ChatUtili.messagePrefix = "&8[&dWF&8]";
 				ChatUtili.sendTranslatedMessage(player, "&7World '&a" + args[1] + "&7' flag '&a" + args[2] + "&7' is: &e" + WorldControl.getWorldSettingValue(args[1], args[2].toLowerCase()));
 			}
+			else if (args[0].equalsIgnoreCase("modify")){
+				if (WorldControl.worldFolderExists(args[1])){
+					try {
+						Environment.valueOf(args[2].toUpperCase());
+						ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world type.");
+					}
+					catch (Exception e){
+						ChatUtili.sendTranslatedMessage(player, "&cInvalid environment.");
+					}
+				}
+				else {
+					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+				}
+			}
 			else {
 				packetHoverMessage.sendHoverMessage(player, prefix,  "&cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
 			}
@@ -498,7 +532,7 @@ public class worldControlCommand implements CommandExecutor {
 		if (args.length == 4){
 			if (args[0].equalsIgnoreCase("create")){
 				try {
-					WorldControl.createWorld(player, args[1], WorldType.getByName(args[2].toUpperCase()), Environment.valueOf(args[3].toUpperCase()));
+					WorldControl.createWorld(player, args[1], WorldType.valueOf(args[2].toUpperCase()), Environment.valueOf(args[3].toUpperCase()));
 				}
 				catch (Exception e){
 					ChatUtili.sendTranslatedMessage(player, "&cInvalid argument given.");
@@ -529,6 +563,20 @@ public class worldControlCommand implements CommandExecutor {
 					ChatUtili.sendTranslatedMessage(player, "Invalid replacement block.");
 				}
 			}
+			else if (args[0].equalsIgnoreCase("modify")){
+				if (WorldControl.worldFolderExists(args[1])){
+					try {
+						WorldControl.modifyWorldEnviorment(args[1], Environment.valueOf(args[2].toUpperCase()), WorldType.valueOf(args[3].toUpperCase()));
+						ChatUtili.sendTranslatedMessage(player, "&aPlease &bunload &athen &bload &aworld '" + args[1] + "' for the changes to take affect!");
+					}
+					catch (Exception e){
+						ChatUtili.sendTranslatedMessage(player, "&cInvalid world type or environment.");
+					}
+				}
+				else {
+					ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+				}
+			}
 			else {
 				packetHoverMessage.sendHoverMessage(player, prefix,  "&cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
 			}
@@ -538,7 +586,7 @@ public class worldControlCommand implements CommandExecutor {
 		if (args.length == 5){
 			if (args[0].equalsIgnoreCase("create")){
 				try {
-					WorldControl.createWorld(player, args[1], WorldType.getByName(args[2].toUpperCase()), Environment.valueOf(args[3].toUpperCase()), Boolean.valueOf(args[4]));
+					WorldControl.createWorld(player, args[1], WorldType.valueOf(args[2].toUpperCase()), Environment.valueOf(args[3].toUpperCase()), Boolean.valueOf(args[4]));
 				}
 				catch (Exception e){
 					ChatUtili.sendTranslatedMessage(player, "&cInvalid argument given.");
@@ -553,7 +601,7 @@ public class worldControlCommand implements CommandExecutor {
 		if (args.length == 6){
 			if (args[0].equalsIgnoreCase("create")){
 				try {
-					WorldControl.createWorld(player, args[1], WorldType.getByName(args[2].toUpperCase()), Environment.valueOf(args[3].toUpperCase()), Boolean.valueOf(args[4]), Integer.parseInt(args[5]));
+					WorldControl.createWorld(player, args[1], WorldType.valueOf(args[2].toUpperCase()), Environment.valueOf(args[3].toUpperCase()), Boolean.valueOf(args[4]), Integer.parseInt(args[5]));
 				}
 				catch (Exception e){
 					ChatUtili.sendTranslatedMessage(player, "&cInvalid argument given.");

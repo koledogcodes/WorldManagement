@@ -55,5 +55,6 @@ public class WorldControlPortalEvent extends Event implements Cancellable {
 	@Override
 	public void setCancelled(boolean arg0) {
 		this.cancelled = arg0;
+		to = from;
 	}
 }

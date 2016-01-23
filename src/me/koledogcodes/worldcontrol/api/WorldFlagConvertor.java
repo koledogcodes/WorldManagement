@@ -11,4 +11,8 @@ public class WorldFlagConvertor {
 	public static String translateFlag(WorldFlag flag){
 		return flag.name().toLowerCase().replaceAll("_", "-");
 	}
+	
+	public static WorldFlag deTranslateFlag(String flag){
+		return WorldFlag.valueOf(flag.replaceAll("-", "_").toUpperCase());
+	}
 }

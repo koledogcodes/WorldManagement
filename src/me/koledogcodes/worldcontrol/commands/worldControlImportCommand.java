@@ -41,7 +41,7 @@ public class worldControlImportCommand implements CommandExecutor {
 		if (args.length == 0){
 		ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc-import inv", " &b- &b(Hover)", "&aThis command simply imports the old per world inv's.");
-		ChatUtili.sendTranslatedMessage(player, "&3----- &bPage 1/5 &3-----");
+		ChatUtili.sendTranslatedMessage(player, "&3----- &bPage 1/1 &3-----");
 			return true;
 		}
 		
