@@ -14,7 +14,9 @@ import org.bukkit.inventory.ItemStack;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 import me.koledogcodes.worldcontrol.api.WorldInfo;
+import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
+import me.koledogcodes.worldcontrol.configs.WorldDataFile;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
 import me.koledogcodes.worldcontrol.handler.WorldControlHandler;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutHoverChat;
@@ -30,7 +32,7 @@ public class worldControlCommand implements CommandExecutor {
 	}
 
 	private PacketOutHoverChat packetHoverMessage = new PacketOutHoverChat();
-	private String prefix = ChatUtili.messagePrefix;
+	public static String prefix = ChatUtili.messagePrefix;
 	private WorldControlHandler WorldControl = new WorldControlHandler();
 	
 	@Override
@@ -83,8 +85,22 @@ public class worldControlCommand implements CommandExecutor {
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to create a config for.");
 		}
 		else if (args[0].equalsIgnoreCase("reload")){
-			Bukkit.getServer().getPluginManager().disablePlugin(plugin);
-			Bukkit.getServer().getPluginManager().enablePlugin(plugin);
+			WorldControl.excuteJavaThread(new Runnable(){
+				
+				@Override
+				public void run() {
+					
+					ConfigFile.reloadCustomConfig();
+					WorldConfigFile.reloadCustomConfig();
+					WorldDataFile.reloadCustomConfig();
+					WorldControl.getWorldControl().reloadConfig();
+					Bukkit.getServer().getPluginManager().disablePlugin(plugin);
+					Bukkit.getServer().getPluginManager().enablePlugin(plugin);
+					
+					return;
+					
+				}
+			});
 			ChatUtili.sendTranslatedMessage(player, "&aWorldControl has been fully reloaded!");
 		}
 		else if (args[0].equalsIgnoreCase("unload")){
@@ -485,7 +501,6 @@ public class worldControlCommand implements CommandExecutor {
 					return true;
 				}
 				
-				ChatUtili.messagePrefix = "&8[&dWF&8]";
 				ChatUtili.sendTranslatedMessage(player, "&7World '&a" + args[1] + "&7' flag '&a" + args[2] + "&7' is: &e" + WorldControl.getWorldSettingValue(args[1], args[2].toLowerCase()));
 			}
 			else if (args[0].equalsIgnoreCase("modify")){
@@ -515,7 +530,6 @@ public class worldControlCommand implements CommandExecutor {
 						for (String world: WorldControl.getAllWorlds()){
 							WorldControl.setWorldFlag(player, world, args[2], args);
 						}
-						ChatUtili.messagePrefix = "&8[&dWF&8]";
 						ChatUtili.sendTranslatedMessage(player, "&7Flag '&e" + args[2] + "&7' global value has been set!");
 					}
 					else {

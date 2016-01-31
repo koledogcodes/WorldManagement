@@ -1,5 +1,6 @@
 package me.koledogcodes.worldcontrol.events;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -40,8 +41,11 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.weather.WeatherChangeEvent;
 import org.bukkit.event.world.PortalCreateEvent;
+import org.bukkit.potion.PotionEffect;
 
 import me.koledogcodes.worldcontrol.WorldControl;
+import me.koledogcodes.worldcontrol.api.MessageType;
+import me.koledogcodes.worldcontrol.api.PlayerStat;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.PlayerDataFile;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
@@ -59,14 +63,19 @@ public class BukkitWorldControlEvent implements Listener {
 	private HashMap<Player, String> customJoinMessage = new HashMap<Player, String>();
 	HashMap<Player, PlayerDataFile> playerDataFile = new HashMap<Player, PlayerDataFile>();
 	public static HashMap<Player, Boolean> cancelBlockAnimation = new HashMap<Player, Boolean>();
-	//private HashMap<Player, Integer> loop = new HashMap<Player, Integer>();
-	//private HashMap<Player, List<ItemStack>> worldInventory = new HashMap<Player, List<ItemStack>>();
+	private HashMap<Player, Integer> loop = new HashMap<Player, Integer>();
+	private HashMap<Player, List<String>> potions = new HashMap<Player, List<String>>();
 	
 	//TODO Setup Player DataFile [CONFIGURATION]
 	@EventHandler 
 	public void onPlayerJoinGameSetFile(PlayerJoinEvent e){
 		Player player = e.getPlayer();
-		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world") == false && ConfigFile.getCustomConfig().getBoolean("enderchest-per-world") == false){ return; }
+		if (ConfigFile.getCustomConfig().getBoolean("Per-World.inventory") == false 
+		&& ConfigFile.getCustomConfig().getBoolean("Per-World.enderchest") == false 
+		&& ConfigFile.getCustomConfig().getBoolean("Per-World.health") == false 
+		&& ConfigFile.getCustomConfig().getBoolean("Per-World.hunger") == false 
+		&& ConfigFile.getCustomConfig().getBoolean("Per-World.exp") == false 
+		&& ConfigFile.getCustomConfig().getBoolean("Per-World.potion") == false){ return; }
 		if (playerDataFile.containsKey(player) == false){
 			playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
 		}
@@ -78,13 +87,13 @@ public class BukkitWorldControlEvent implements Listener {
 		try {
 		Player player = e.getPlayer();
 		
-		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world") == false){ return; }
+		if (ConfigFile.getCustomConfig().getBoolean("Per-World.inventory") == false){ return; }
 		
 		if (playerDataFile.containsKey(player) == false){
 			playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
 		}
 		
-		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world-per-gamemode")){
+		if (ConfigFile.getCustomConfig().getBoolean("Per-World.inventory-per-gamemode")){
 			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind") + "." + player.getGameMode().name().toLowerCase() + ".inventory", player.getInventory().getContents());
 			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind") + "." + player.getGameMode().name().toLowerCase() + ".helm", player.getInventory().getHelmet());
 			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind") + "." + player.getGameMode().name().toLowerCase() + ".chestplate", player.getInventory().getChestplate());
@@ -106,13 +115,13 @@ public class BukkitWorldControlEvent implements Listener {
 		try {
 		Player player = e.getPlayer();
 		
-		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world") == false){ return; }
+		if (ConfigFile.getCustomConfig().getBoolean("Per-World.inventory") == false){ return; }
 		
 		if (playerDataFile.containsKey(player) == false){
 			playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
 		}
 		
-		if (ConfigFile.getCustomConfig().getBoolean("inventory-per-world-per-gamemode")){
+		if (ConfigFile.getCustomConfig().getBoolean("Per-World.inventory-per-gamemode")){
 			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-inventory-bind") + "." + player.getGameMode().name().toLowerCase() + ".inventory", player.getInventory().getContents());
 			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-inventory-bind") + "." + player.getGameMode().name().toLowerCase() + ".helm", player.getInventory().getHelmet());
 			playerDataFile.get(player).getConfig().set(player.getUniqueId().toString() + "." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-inventory-bind") + "." + player.getGameMode().name().toLowerCase() + ".chestplate", player.getInventory().getChestplate());
@@ -164,7 +173,7 @@ public class BukkitWorldControlEvent implements Listener {
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "build")){
 				  if (blacklist.contains("-" + e.getBlock().getTypeId()) || blacklist.contains("-" + e.getBlock().getType().name())){
-					  ChatUtili.sendTranslatedMessage(player, "&cYou cannot place block '&4" + e.getBlock().getType().name() + "&c' in this world.");
+					  ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLACE_BLOCK_DENY).replace("{BLOCK}", e.getBlock().getType().name()));
 					  e.setCancelled(true);
 				  }
 				  else {
@@ -176,7 +185,7 @@ public class BukkitWorldControlEvent implements Listener {
 					  return;
 				  }
 				  else {
-					ChatUtili.sendTranslatedMessage(player, "&cYou cannot place block '&4" + e.getBlock().getType().name() + "&c' in this world.");
+					 ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLACE_BLOCK_DENY).replace("{BLOCK}", e.getBlock().getType().name()));
 					 e.setCancelled(true);  
 				  }
 			  }
@@ -193,7 +202,7 @@ public class BukkitWorldControlEvent implements Listener {
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			  if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "build")){
 				  if (blacklist.contains("-" + e.getBlock().getTypeId()) || blacklist.contains("-" + e.getBlock().getType().name())){
-					  ChatUtili.sendTranslatedMessage(player, "&cYou cannot break block '&4" + e.getBlock().getType().name() + "&c' in this world.");
+					  ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.BREAK_BLOCK_DENY).replace("{BLOCK}", e.getBlock().getType().name()));
 					  e.setCancelled(true);
 				  }
 				  else {
@@ -205,7 +214,7 @@ public class BukkitWorldControlEvent implements Listener {
 					  return;
 				  }
 				  else {
-					  ChatUtili.sendTranslatedMessage(player, "&cYou cannot break block '&4" + e.getBlock().getType().name() + "&c' in this world.");
+					 ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.BREAK_BLOCK_DENY).replace("{BLOCK}", e.getBlock().getType().name()));
 					 e.setCancelled(true);  
 				  }
 			  }
@@ -261,14 +270,13 @@ public class BukkitWorldControlEvent implements Listener {
 			}
 			
 			if ((e.getTo().getWorld().getPlayers().size() + 1) > ((int) WorldControl.getWorldSettingValue(e.getTo().getWorld().getName(), "player-limit"))){
-				ChatUtili.sendTranslatedMessage(player, "&cYou cannot teleport to world '" + e.getTo().getWorld().getName() + "' becuase it has reached its player limit.");
+				ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, e.getTo().getWorld(), MessageType.PLAYERLIMIT_DENY).replace("{PREVIOUS}", e.getFrom().getWorld().getName()));
 				e.setCancelled(true);
 				return;
 			}
 			else {
 				if (WorldControlHandler.tpSuccecs.containsKey(player)){
 					if (WorldControlHandler.tpSuccecs.get(player)){
-						ChatUtili.sendTranslatedMessage(player, "&aSuccesfully tped to world '" + e.getTo().getWorld().getName() + "' spawn location.");	
 						WorldControlHandler.tpSuccecs.remove(player);
 					}
 				}
@@ -288,7 +296,7 @@ public class BukkitWorldControlEvent implements Listener {
 			
 			if ((player.getWorld().getPlayers().size() - 0) >= (int) WorldControl.getWorldSettingValue(player.getWorld().getName(), "player-limit")){
 				player.teleport(Bukkit.getWorld(WorldControl.getWorldSettingValue(player.getWorld().getName(), "fallback-world").toString()).getSpawnLocation());
-				ChatUtili.sendTranslatedMessage(player, "&cYou cannot be in world '" + e.getPlayer().getWorld().getName() + "' becuase it has reached its player limit.");
+				ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLAYERLIMIT_DENY).replace("{PREVIOUS}", player.getWorld().getName()));
 			}
 		}
 	}
@@ -307,7 +315,7 @@ public class BukkitWorldControlEvent implements Listener {
 		  if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "commands-allowed")){
 				if (((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "cmd-allowed-list")).contains("-" + e.getMessage().replace("/", "").split(" ")[0])){
 					e.setCancelled(true);
-					ChatUtili.sendTranslatedMessage(player, "&cYou cannot use &4" + e.getMessage() + " &cin this world.");
+					ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLAYER_CMD_DENY).replace("{COMMAND}", e.getMessage()));
 				}
 				else {
 					return;
@@ -319,7 +327,7 @@ public class BukkitWorldControlEvent implements Listener {
 			}
 			else {
 				e.setCancelled(true);
-				ChatUtili.sendTranslatedMessage(player, "&cYou cannot use &4" + e.getMessage() + " &cin this world.");
+				ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLAYER_CMD_DENY).replace("{COMMAND}", e.getMessage()));
 			}
 		  }
 		}
@@ -393,7 +401,7 @@ public class BukkitWorldControlEvent implements Listener {
 			}
 			else {
 				e.setCancelled(true);
-				ChatUtili.sendTranslatedMessage(player, "&cYou cannot chat in this world.");
+				ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLAYER_CHAT_DENY).replace("{MESSAGE}", e.getMessage()));
 			}
 		}
 	}
@@ -406,7 +414,7 @@ public class BukkitWorldControlEvent implements Listener {
 	if (WorldControl.worldWhitelistIsEnabled(e.getTo().getWorld().getName())){
 		if (WorldControl.worldWhiteListHasPlayer(player.getName(), e.getTo().getWorld().getName()) == false){
 			e.setCancelled(true);
-			ChatUtili.sendTranslatedMessage(player, "&cYou cannot tp to world '" + e.getTo().getWorld().getName() + "' that your not whitelisted in.");
+			ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, e.getTo().getWorld(), MessageType.PLAYER_WHITELIST_DENY).replace("{PREVIOUS}", e.getFrom().getWorld().getName()));
 		}
 		else {
 			return;
@@ -435,7 +443,7 @@ public class BukkitWorldControlEvent implements Listener {
 			}
 			else {
 				e.setCancelled(true);
-				ChatUtili.sendTranslatedMessage(player, "&cYou cannot use &4'" + player.getItemInHand().getType().name() + "' &cin this world.");
+				ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLAYER_INTERACT_DENY).replace("{ITEM}", player.getItemInHand().getType().name()));
 			}
 		}
 	}
@@ -486,25 +494,25 @@ public class BukkitWorldControlEvent implements Listener {
 						e.setTo(newLoc);
 					}
 					else {
-						ChatUtili.sendTranslatedMessage(player, "&cUnknown Environment!");
+						
 					}
 				}
 				catch (Exception exc){
-					ChatUtili.sendTranslatedMessage(player, "&cAlternate world must be created to use this portal.");
+					ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.ALTERNATE_WORLD_DENY));
 				}
 				return;
 			}
 			else {
 				e.setCancelled(true);
-				ChatUtili.sendTranslatedMessage(player, "&cYou cannot use portals in this world.");
-			}
+				ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.NETHER_TELEPORT_DENY));			}
 		}
 	   }
 		else if (e.getCause().equals(TeleportCause.END_PORTAL)){
+			//CODE WILL BE HERE LATER
 			return;
 		}
 		else {
-			ChatUtili.sendTranslatedMessage(player, "&cUnknown teleport cause!");
+			return;
 		}
 	}
 	
@@ -573,7 +581,7 @@ public class BukkitWorldControlEvent implements Listener {
 				}
 				else {
 					e.setCancelled(true);
-					ChatUtili.sendTranslatedMessage(player, "&cYou do not have permission to go to this world.");
+					ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, e.getTo().getWorld(), MessageType.PLAYER_WORLD_PERMISSION_DENY).replace("{PREVIOUS}", e.getFrom().getWorld().getName()).replace("{CURRENT}", player.getWorld().getName()).replace("{PERMISSION}", "worldcontrol.world." + e.getTo().getWorld().getName()));			
 				}
 			}
 	}
@@ -596,7 +604,7 @@ public class BukkitWorldControlEvent implements Listener {
 	public void onPlayerClickEnderChest(PlayerInteractEvent e){
 		Player player = e.getPlayer();
 		
-		if (ConfigFile.getCustomConfig().getBoolean("enderchest-per-world") == false){ return; }
+		if (ConfigFile.getCustomConfig().getBoolean("Per-World.enderchest") == false){ return; }
 		if (e.getAction() != Action.RIGHT_CLICK_BLOCK){ return; }
 		
 		if (e.getClickedBlock().getType() == Material.ENDER_CHEST){
@@ -615,7 +623,7 @@ public class BukkitWorldControlEvent implements Listener {
 			if (e.getInventory().getName().equalsIgnoreCase(ChatColor.stripColor("Ender Chest"))){
 				Player player = (Player) e.getPlayer();
 				
-				if (ConfigFile.getCustomConfig().getBoolean("enderchest-per-world") == false){ return; }
+				if (ConfigFile.getCustomConfig().getBoolean("Per-World.enderchest") == false){ return; }
 				
 				cancelBlockAnimation.put(player, true);
 				
@@ -636,7 +644,7 @@ public class BukkitWorldControlEvent implements Listener {
 	//TODO Set EnderChest contents [CONFIGURATION]
 	@EventHandler (priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onEnderChestOpen(InventoryOpenEvent e){
-		if (ConfigFile.getCustomConfig().getBoolean("enderchest-per-world") == false){ return; }
+		if (ConfigFile.getCustomConfig().getBoolean("Per-World.enderchest") == false){ return; }
 		
 		if (e.getInventory().getName().equalsIgnoreCase(ChatColor.stripColor("Ender Chest"))){
 			Player player = (Player) e.getPlayer();
@@ -677,7 +685,7 @@ public class BukkitWorldControlEvent implements Listener {
 	}
 	
 	//TODO Liquid Flow [SETTING]
-	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+	@EventHandler
 	public void onLiquidFlow(BlockFromToEvent e){
 		if (WorldControl.worldContainsSettings(e.getBlock().getWorld().getName())){
 			if (e.getBlock().getType() == Material.STATIONARY_WATER){
@@ -697,13 +705,14 @@ public class BukkitWorldControlEvent implements Listener {
 	
 	//TODO Can Eat [SETTING]
 	@SuppressWarnings({ "unchecked", "deprecation" })
-	@EventHandler
+	@EventHandler 
 	public void onPlayerEat(PlayerItemConsumeEvent e){
 		Player player = e.getPlayer();
 		if (WorldControl.worldContainsSettings(player.getWorld().getName())){
 			if ((boolean) WorldControl.getWorldSettingValue(player.getWorld().getName(), "can-eat")){
 				if (((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "can-eat-list")).contains("-" + e.getItem().getType().name()) || ((List<String>) WorldControl.getWorldSettingValue(player.getWorld().getName(), "can-eat-list")).contains(String.valueOf("-" + e.getItem().getTypeId()))){
 					e.setCancelled(true);
+					ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLAYER_EAT_DENY).replace("{ITEM}", e.getItem().getType().name()));			
 				}
 				
 				return;
@@ -714,7 +723,71 @@ public class BukkitWorldControlEvent implements Listener {
 				}
 				else {
 					e.setCancelled(true);
+					ChatUtili.sendSimpleTranslatedMessage(player, WorldControl.replaceBasicPlaceholders(player, player.getWorld(), MessageType.PLAYER_EAT_DENY).replace("{ITEM}", e.getItem().getType().name()));			
 				}
+			}
+		}
+	}
+	
+	//TODO Player Stat's [SETTING]
+	@EventHandler
+	public void onPlayerChangeWorldStats(PlayerChangedWorldEvent e){
+		if (WorldControl.worldContainsSettings(e.getPlayer().getWorld().getName())){
+			Player player = e.getPlayer();
+			
+			if (playerDataFile.containsKey(player) == false){
+				playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
+			}
+			
+			if (ConfigFile.getCustomConfig().getBoolean("Per-World.health")){
+				playerDataFile.get(player).getConfig().set("health.main." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-playerstats-bind") + ".current", player.getHealth());
+				playerDataFile.get(player).getConfig().set("health.main." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-playerstats-bind") + ".max", player.getMaxHealth());
+				playerDataFile.get(player).saveConfig();
+				
+				WorldControl.setPlayerStat(player, player.getWorld().getName(), PlayerStat.HEALTH);
+			}
+			
+			if (ConfigFile.getCustomConfig().getBoolean("Per-World.hunger")){
+				playerDataFile.get(player).getConfig().set("hunger.main." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-playerstats-bind") + ".current", player.getFoodLevel());
+				playerDataFile.get(player).saveConfig();
+				
+				WorldControl.setPlayerStat(player, player.getWorld().getName(), PlayerStat.HUNGER);
+			}
+			
+			if (ConfigFile.getCustomConfig().getBoolean("Per-World.xp")){
+				playerDataFile.get(player).getConfig().set("exp.main." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-playerstats-bind") + ".current-level", player.getLevel());
+				playerDataFile.get(player).getConfig().set("exp.main." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-playerstats-bind") + ".boost", player.getExp());
+				playerDataFile.get(player).saveConfig();
+				
+				WorldControl.setPlayerStat(player, player.getWorld().getName(), PlayerStat.EXP);
+			}
+			
+			if (ConfigFile.getCustomConfig().getBoolean("Per-World.potion")){
+				potions.put(player, new ArrayList<String>());
+				for (loop.put(player, 0); loop.get(player) < player.getActivePotionEffects().size(); loop.put(player, loop.get(player) + 1)){
+					potions.get(player).add(							
+					player.getActivePotionEffects().toArray(new PotionEffect[0])[loop.get(player)].getType().getName() + "#" +
+					player.getActivePotionEffects().toArray(new PotionEffect[0])[loop.get(player)].getDuration() + "#" + 
+					player.getActivePotionEffects().toArray(new PotionEffect[0])[loop.get(player)].getAmplifier());
+				}
+				
+			
+				playerDataFile.get(player).getConfig().set("potion.main." + WorldControl.getWorldSettingValue(e.getFrom().getName(), "world-playerstats-bind") + ".current", potions.get(player));
+				playerDataFile.get(player).saveConfig();
+				
+				WorldControl.setPlayerStat(player, player.getWorld().getName(), PlayerStat.POTION);
+			}
+		}
+	}
+	
+	//TODO Per World Chat [SETTING]
+	@EventHandler
+	public void onPlayerChatInWorld(AsyncPlayerChatEvent e){
+		Player player = e.getPlayer();
+		if (ConfigFile.getCustomConfig().getBoolean("Per-World.chat")){
+			if (WorldControl.worldContainsSettings(player.getWorld().getName())){
+				e.getRecipients().clear();
+				e.getRecipients().addAll(WorldControl.getPlayerCollection(player, WorldControl.getWorldSettingValue(player.getWorld().getName(), "world-chat-bind").toString().split("\\,")));
 			}
 		}
 	}

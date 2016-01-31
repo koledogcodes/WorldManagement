@@ -92,7 +92,7 @@ public class BukkitWorldControlSignEvent implements Listener {
 	//TODO Player Join World
 	@EventHandler
 	public void worldChangeEvent(PlayerChangedWorldEvent e){
-		WorldControl.excuteNewThread(new Runnable(){
+		WorldControl.excuteJavaThread(new Runnable(){
 			@Override
 			public void run() {
 			

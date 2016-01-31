@@ -18,6 +18,7 @@ import me.koledogcodes.worldcontrol.commands.worldControlImportCommand;
 import me.koledogcodes.worldcontrol.commands.worldControlTabCompletionCommand;
 import me.koledogcodes.worldcontrol.configs.BlockDataFile;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
+import me.koledogcodes.worldcontrol.configs.MessageFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldPortalFile;
@@ -79,10 +80,6 @@ public class WorldControl extends JavaPlugin {
 		}
 		
 		new WorldControlHandler(this);
-		new ChatUtili();
-		new PacketHandler();
-		new PacketOutClickChat();
-		new PacketOutHoverChat();
 		new ConfigFile (this);
 		new WorldConfigFile (this);
 		new WorldWhitelistFile (this);
@@ -91,12 +88,20 @@ public class WorldControl extends JavaPlugin {
 		new WorldPortalFile (this);
 		new WorldPortalLocationFile (this);
 		new BlockDataFile (this);
+		new MessageFile(this);
+		
+		handler = new WorldControlHandler(this);
+		handler.generateConfiguration();
+		handler.generateMessages();
+		
+		new ChatUtili();
+		new PacketHandler();
+		new PacketOutClickChat();
+		new PacketOutHoverChat();
 		new WorldFlagConvertor(this);
 		new WorldControlEventCaller(this);
 		new WorldDataFile(this);
 		
-		saveDefaultConfig();
-		reloadConfig();
 		ConfigFile.reloadCustomConfig();
 		WorldConfigFile.reloadCustomConfig();
 		WorldWhitelistFile.reloadCustomConfig();
@@ -106,6 +111,7 @@ public class WorldControl extends JavaPlugin {
 		WorldPortalLocationFile.reloadCustomConfig();
 		BlockDataFile.reloadCustomConfig();
 		WorldDataFile.reloadCustomConfig();
+		MessageFile.reloadCustomConfig();
 		
 		WorldControlHandler.setInstance(this);
 		
@@ -119,8 +125,6 @@ public class WorldControl extends JavaPlugin {
 		getCommand("worldcontrol").setTabCompleter(new worldControlTabCompletionCommand(this));
 		getCommand("wc-import").setExecutor(new worldControlImportCommand (this));
 		getCommand("wc-gen").setExecutor(new worldControlGeneratorCommand (this));
-		
-		handler = new WorldControlHandler(this);
 		
 		//Loading worlds
 		for (int i = 0; i < getConfig().getStringList("worlds-to-load-on-startup").size(); i++){
@@ -142,10 +146,14 @@ public class WorldControl extends JavaPlugin {
 		}
 		handler.logConsole("------------------------------------");
 		
-		handler.generateConfiguration();
 		handler.startAutosave();
 		WorldControlEventCaller.startLoadUnloadEventCaller();
 		WorldControlEventCaller.startWorldCreateEventCaller();
+		
+		ChatUtili.messagePrefix = getConfig().getString("prefix");
+		worldControlCommand.prefix = ChatUtili.messagePrefix;
+		worldControlGeneratorCommand.prefix = ChatUtili.messagePrefix;
+		worldControlImportCommand.prefix = ChatUtili.messagePrefix;
 		
 		handler.logConsole("WorldManagement has been enabled");
 	}

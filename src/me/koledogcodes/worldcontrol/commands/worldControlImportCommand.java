@@ -19,7 +19,7 @@ public class worldControlImportCommand implements CommandExecutor {
 	}
 
 	private PacketOutHoverChat packetHoverMessage = new PacketOutHoverChat();
-	private String prefix = ChatUtili.messagePrefix;
+	public static String prefix = ChatUtili.messagePrefix;
 	private WorldControlHandler WorldControl = new WorldControlHandler();
 	
 	@Override

@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.TimerTask;
 
@@ -24,13 +25,19 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import me.koledogcodes.worldcontrol.WorldControl;
+import me.koledogcodes.worldcontrol.api.MessageType;
+import me.koledogcodes.worldcontrol.api.MessageTypeConvertor;
+import me.koledogcodes.worldcontrol.api.PlayerStat;
 import me.koledogcodes.worldcontrol.api.WorldControlSignType;
 import me.koledogcodes.worldcontrol.api.WorldData;
 import me.koledogcodes.worldcontrol.api.WorldGenerator;
 import me.koledogcodes.worldcontrol.configs.BlockDataFile;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
+import me.koledogcodes.worldcontrol.configs.MessageFile;
 import me.koledogcodes.worldcontrol.configs.PlayerDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldDataFile;
@@ -65,7 +72,9 @@ public class WorldControlHandler {
 	
 	private final static int RESULTS_PER_PAGE = 6;
 	private WorldControlTimer timer = new WorldControlTimer();
+	private HashMap<Integer, Thread> threads = new HashMap<Integer, Thread>();
 	private HashMap<Player, Inventory> echest = new HashMap<Player, Inventory>();
+	private HashMap<Player, List<String>> playerPotions = new HashMap<Player, List<String>>();
 	private HashMap<Player, List<ItemStack>> echestItems = new HashMap<Player, List<ItemStack>>();
 	private HashMap<Player, Double> rotation = new HashMap<Player, Double>();
 	private HashMap<Player, Long> time = new HashMap<Player, Long>();
@@ -92,6 +101,8 @@ public class WorldControlHandler {
 	private HashMap<Player, Integer> y = new HashMap<Player, Integer>();
 	private HashMap<Player, Integer> z = new HashMap<Player, Integer>();
 	private HashMap<CommandSender, Integer> i = new HashMap<CommandSender, Integer>();
+	private HashMap<CommandSender, Integer> j = new HashMap<CommandSender, Integer>();
+	private HashMap<CommandSender, Integer> k = new HashMap<CommandSender, Integer>();
 	private HashMap<Player, Integer> occurnaces = new HashMap<Player, Integer>();
 	private HashMap<Player, Block> block = new HashMap<Player, Block>();
 	public HashMap<Player, String> world = new HashMap<Player, String>();
@@ -103,6 +114,7 @@ public class WorldControlHandler {
 	public static HashMap<Player, Boolean> portalTeleportInstance = new HashMap<Player, Boolean>();
 	public static HashMap<Player, String> portalCreationInfo = new HashMap<Player, String>();
 	private HashMap<String, List<String>> worldWhitelist = new HashMap<String, List<String>>();
+	private HashMap<String, List<Player>> playerCollection = new HashMap<String, List<Player>>();
 	private HashMap<Player, PlayerDataFile> playerDataFile = new HashMap<Player, PlayerDataFile>();
 	
 	public boolean deleteWorld(String world, File path) {
@@ -147,7 +159,6 @@ public class WorldControlHandler {
 			ChatUtili.sendTranslatedMessage(player, "&cCannot load world '" + world + "' that doesn't exist.");
 			}
 		}
-		
 	}
 	
 	public void createWorld(Player player, String world, WorldType world_type, Environment envoirment, boolean generateStructures, int seed){
@@ -311,39 +322,49 @@ public class WorldControlHandler {
 		return blacklist;
 	}
 	
-	public void messageWorldsStatus(CommandSender player, int page){
-		List<String> worlds = getAllWorlds();
-		
-		if (page <= 0 || page > Math.ceil((double) worlds.size() / (double) RESULTS_PER_PAGE)){
-			ChatUtili.sendTranslatedMessage(player, "&cInvalid page!");
-			return;
-		}
-		
-		player.sendMessage(ChatUtili.colorConvert("&7----- &6Worlds &7----- &c(" + worlds.size() + " worlds in total)"));
+	public void messageWorldsStatus(final CommandSender player, final int page){
+		excuteJavaThread(new Runnable(){
 
-		if ((page * RESULTS_PER_PAGE) > worlds.size()){
-			for (i.put(player, (page * RESULTS_PER_PAGE) - RESULTS_PER_PAGE); i.get(player) < (worlds.size()); i.put(player, i.get(player) + 1)){
-				if (worldExists(worlds.get(i.get(player)))){
-					ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(loaded)");
+			@Override
+			public void run() {
+				
+				List<String> worlds = getAllWorlds();
+				
+				if (page <= 0 || page > Math.ceil((double) worlds.size() / (double) RESULTS_PER_PAGE)){
+					ChatUtili.sendTranslatedMessage(player, "&cInvalid page!");
+					return;
+				}
+				
+				player.sendMessage(ChatUtili.colorConvert("&7----- &6Worlds &7----- &c(" + worlds.size() + " worlds in total)"));
+
+				if ((page * RESULTS_PER_PAGE) > worlds.size()){
+					for (i.put(player, (page * RESULTS_PER_PAGE) - RESULTS_PER_PAGE); i.get(player) < (worlds.size()); i.put(player, i.get(player) + 1)){
+						if (worldExists(worlds.get(i.get(player)))){
+							ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(loaded)");
+						}
+						else {
+							ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(not loaded)");
+						}
+					}
 				}
 				else {
-					ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(not loaded)");
+					for (i.put(player, (page * RESULTS_PER_PAGE) - RESULTS_PER_PAGE); i.get(player) < (page * RESULTS_PER_PAGE); i.put(player, i.get(player) + 1)){
+						if (worldExists(worlds.get(i.get(player)))){
+							ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(loaded)");
+						}
+						else {
+							ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(not loaded)");
+						}
+					}
 				}
+				
+				player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + (int) (Math.ceil((double) worlds.size() / (double) RESULTS_PER_PAGE)) ));
+				player.sendMessage(ChatUtili.colorConvert("&7---------- "));
+				
+				return;
 			}
-		}
-		else {
-			for (i.put(player, (page * RESULTS_PER_PAGE) - RESULTS_PER_PAGE); i.get(player) < (page * RESULTS_PER_PAGE); i.put(player, i.get(player) + 1)){
-				if (worldExists(worlds.get(i.get(player)))){
-					ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(loaded)");
-				}
-				else {
-					ChatUtili.sendSimpleTranslatedMessage(player, "&a" + worlds.get(i.get(player)) + " &b(not loaded)");
-				}
-			}
-		}
-		
-		player.sendMessage(ChatUtili.colorConvert("&fPage " + page + "/" + (int) (Math.ceil((double) worlds.size() / (double) RESULTS_PER_PAGE)) ));
-		player.sendMessage(ChatUtili.colorConvert("&7---------- "));
+			
+		});
 	}
 	
 	public List<String> getAllWorlds(){
@@ -400,92 +421,104 @@ public class WorldControlHandler {
 		}
 	}
 	
-	public void generateWorldConfiguration(Player player){
-		if (worldFolderExists(world.get(player))){
-			if (worldExists(world.get(player))){
-				//Generate
-					setWorldConfigOption(player, "pvp", true);	
-					setWorldConfigOption(player, "build", true);
-					
-					if (getWorldSettingValue(player.getWorld().getName(), "certain-blocks-place-allow") != null){
-						setWorldConfigOption(player, "block-place-list", getWorldSettingValue(player.getWorld().getName(), "certain-blocks-place-allow"));
-						overrideWorldConfigOption(player.getWorld().getName(), "certain-blocks-place-allow", null);
+	public void generateWorldConfiguration(final Player player){
+		excuteJavaThread(new Runnable(){
+
+			@Override
+			public void run() {
+				
+				if (worldFolderExists(world.get(player))){
+					if (worldExists(world.get(player))){
+						//Generate
+							setWorldConfigOption(player, "pvp", true);	
+							setWorldConfigOption(player, "build", true);
+							
+							if (getWorldSettingValue(player.getWorld().getName(), "certain-blocks-place-allow") != null){
+								setWorldConfigOption(player, "block-place-list", getWorldSettingValue(player.getWorld().getName(), "certain-blocks-place-allow"));
+								overrideWorldConfigOption(player.getWorld().getName(), "certain-blocks-place-allow", null);
+							}
+							else {
+								setWorldConfigOption(player, "block-place-list", new String[]{"SEEDS"});
+							}
+							
+							if (getWorldSettingValue(player.getWorld().getName(), "certain-blocks-break-allow") != null){
+								setWorldConfigOption(player, "block-break-list", getWorldSettingValue(player.getWorld().getName(), "certain-blocks-break-allow"));
+								overrideWorldConfigOption(player.getWorld().getName(), "certain-blocks-break-allow", null);
+							}
+							else {
+								setWorldConfigOption(player, "block-break-list", new String[]{"SEEDS"});
+							}
+							
+							setWorldConfigOption(player, "weather-locked", false);
+							setWorldConfigOption(player, "mob-spawn", true);
+							
+							if (getWorldSettingValue(player.getWorld().getName(), "certain-mob-spawn-allow") != null){
+								setWorldConfigOption(player, "mob-spawn-list", getWorldSettingValue(player.getWorld().getName(), "certain-mob-spawn-allow"));
+								overrideWorldConfigOption(player.getWorld().getName(), "certain-mob-spawn-allow", null);
+							}
+							else {
+								setWorldConfigOption(player, "mob-spawn-list", new String[]{"CHICKEN","COW","SHEEP"});
+							}
+							
+							setWorldConfigOption(player, "player-limit", 1);	
+							setWorldConfigOption(player, "commands-allowed", true);	
+							
+							if (getWorldSettingValue(player.getWorld().getName(), "certain-commands-use-allow") != null){
+								setWorldConfigOption(player, "cmd-allowed-list", getWorldSettingValue(player.getWorld().getName(), "certain-commands-use-allow"));
+								overrideWorldConfigOption(player.getWorld().getName(), "certain-commands-use-allow", null);
+							}
+							else {
+								setWorldConfigOption(player, "cmd-allowed-list", new String[]{"spawn", "msg", "r"});
+							}
+							
+							setWorldConfigOption(player, "fallback-world", "world");
+							setWorldConfigOption(player, "players-invincible", true);
+							setWorldConfigOption(player, "mobs-invincible", true);
+							setWorldConfigOption(player, "mobs-drop-loot", true);
+							setWorldConfigOption(player, "mobs-drop-exp", true);
+							setWorldConfigOption(player, "players-drop-loot", true);
+							setWorldConfigOption(player, "players-drop-exp", true);
+							setWorldConfigOption(player, "chat", true);
+							setWorldConfigOption(player, "mob-limit", 100);
+							setWorldConfigOption(player, "player-interact", true);
+							setWorldConfigOption(player, "explosion", true);
+							setWorldConfigOption(player, "nether-portal-can-create", true);
+							setWorldConfigOption(player, "nether-portal-teleport", true);
+							setWorldConfigOption(player, "title-join", false);
+							setWorldConfigOption(player, "title-join-message-main", "&f&lWelcome <player>!");
+							setWorldConfigOption(player, "title-join-message-main-display-time", 5);
+							setWorldConfigOption(player, "title-join-message-sub", "<world-online>/<world-online-max>");
+							setWorldConfigOption(player, "title-join-message-sub-display-time", 5);
+							setWorldConfigOption(player, "default-gamemode", "survival");
+							setWorldConfigOption(player, "world-inventory-bind", player.getWorld().getName());
+							setWorldConfigOption(player, "world-enderchest-bind", player.getWorld().getName());
+							setWorldConfigOption(player, "world-playerstats-bind", player.getWorld().getName());
+							setWorldConfigOption(player, "world-chat-bind", player.getWorld().getName());
+							setWorldConfigOption(player, "nether-world", player.getWorld().getName().replaceAll("_nether", "") + "_nether");
+							setWorldConfigOption(player, "overworld-world", player.getWorld().getName().replaceAll("_nether", ""));
+							setWorldConfigOption(player, "leaves-decay", false);
+							setWorldConfigOption(player, "no-hunger", false);
+							setWorldConfigOption(player, "lava-flow", false);
+							setWorldConfigOption(player, "water-flow", false);
+							setWorldConfigOption(player, "can-eat", true);
+							setWorldConfigOption(player, "can-eat-list", new String[]{});
+							WorldConfigFile.saveCustomConfig();
+							WorldConfigFile.reloadCustomConfig();
+						ChatUtili.sendTranslatedMessage(player, "&aGenerated config for world '" + world.get(player) + "'.");
+						world.remove(player);
 					}
 					else {
-						setWorldConfigOption(player, "block-place-list", new String[]{"SEEDS"});
+						ChatUtili.sendTranslatedMessage(player, "&cPlease load world '" + world.get(player) + "' to generate a config.");
 					}
-					
-					if (getWorldSettingValue(player.getWorld().getName(), "certain-blocks-break-allow") != null){
-						setWorldConfigOption(player, "block-break-list", getWorldSettingValue(player.getWorld().getName(), "certain-blocks-break-allow"));
-						overrideWorldConfigOption(player.getWorld().getName(), "certain-blocks-break-allow", null);
-					}
-					else {
-						setWorldConfigOption(player, "block-break-list", new String[]{"SEEDS"});
-					}
-					
-					setWorldConfigOption(player, "weather-locked", false);
-					setWorldConfigOption(player, "mob-spawn", true);
-					
-					if (getWorldSettingValue(player.getWorld().getName(), "certain-mob-spawn-allow") != null){
-						setWorldConfigOption(player, "mob-spawn-list", getWorldSettingValue(player.getWorld().getName(), "certain-mob-spawn-allow"));
-						overrideWorldConfigOption(player.getWorld().getName(), "certain-mob-spawn-allow", null);
-					}
-					else {
-						setWorldConfigOption(player, "mob-spawn-list", new String[]{"CHICKEN","COW","SHEEP"});
-					}
-					
-					setWorldConfigOption(player, "player-limit", 1);	
-					setWorldConfigOption(player, "commands-allowed", true);	
-					
-					if (getWorldSettingValue(player.getWorld().getName(), "certain-commands-use-allow") != null){
-						setWorldConfigOption(player, "cmd-allowed-list", getWorldSettingValue(player.getWorld().getName(), "certain-commands-use-allow"));
-						overrideWorldConfigOption(player.getWorld().getName(), "certain-commands-use-allow", null);
-					}
-					else {
-						setWorldConfigOption(player, "cmd-allowed-list", new String[]{"spawn", "msg", "r"});
-					}
-					
-					setWorldConfigOption(player, "fallback-world", "world");
-					setWorldConfigOption(player, "players-invincible", true);
-					setWorldConfigOption(player, "mobs-invincible", true);
-					setWorldConfigOption(player, "mobs-drop-loot", true);
-					setWorldConfigOption(player, "mobs-drop-exp", true);
-					setWorldConfigOption(player, "players-drop-loot", true);
-					setWorldConfigOption(player, "players-drop-exp", true);
-					setWorldConfigOption(player, "chat", true);
-					setWorldConfigOption(player, "mob-limit", 100);
-					setWorldConfigOption(player, "player-interact", true);
-					setWorldConfigOption(player, "explosion", true);
-					setWorldConfigOption(player, "nether-portal-can-create", true);
-					setWorldConfigOption(player, "nether-portal-teleport", true);
-					setWorldConfigOption(player, "title-join", false);
-					setWorldConfigOption(player, "title-join-message-main", "&f&lWelcome <player>!");
-					setWorldConfigOption(player, "title-join-message-main-display-time", 5);
-					setWorldConfigOption(player, "title-join-message-sub", "<world-online>/<world-online-max>");
-					setWorldConfigOption(player, "title-join-message-sub-display-time", 5);
-					setWorldConfigOption(player, "default-gamemode", "survival");
-					setWorldConfigOption(player, "world-inventory-bind", player.getWorld().getName());
-					setWorldConfigOption(player, "world-enderchest-bind", player.getWorld().getName());
-					setWorldConfigOption(player, "nether-world", player.getWorld().getName().replaceAll("_nether", "") + "_nether");
-					setWorldConfigOption(player, "overworld-world", player.getWorld().getName().replaceAll("_nether", ""));
-					setWorldConfigOption(player, "leaves-decay", false);
-					setWorldConfigOption(player, "no-hunger", false);
-					setWorldConfigOption(player, "lava-flow", false);
-					setWorldConfigOption(player, "water-flow", false);
-					setWorldConfigOption(player, "can-eat", true);
-					setWorldConfigOption(player, "can-eat-list", new String[]{});
-					WorldConfigFile.saveCustomConfig();
-					WorldConfigFile.reloadCustomConfig();
-				ChatUtili.sendTranslatedMessage(player, "&aGenerated config for world '" + world.get(player) + "'.");
-				world.remove(player);
+				}
+				else {
+					ChatUtili.sendTranslatedMessage(player, "&cCannot generate a config for world '" + world.get(player) + "' that doesn't exist!");
+				}
+				
+				return;
 			}
-			else {
-				ChatUtili.sendTranslatedMessage(player, "&cPlease load world '" + world.get(player) + "' to generate a config.");
-			}
-		}
-		else {
-			ChatUtili.sendTranslatedMessage(player, "&cCannot generate a config for world '" + world.get(player) + "' that doesn't exist!");
-		}		
+			
+		});
 	}
 	
 	public void generateWorldConfiguration(String world){
@@ -552,6 +585,8 @@ public class WorldControlHandler {
 					setWorldConfigOption(world, "default-gamemode", "survival");
 					setWorldConfigOption(world, "world-inventory-bind", world);
 					setWorldConfigOption(world, "world-enderchest-bind", world);
+					setWorldConfigOption(world, "world-playerstats-bind", world);
+					setWorldConfigOption(world, "world-chat-bind", world);
 					setWorldConfigOption(world, "nether-world", world.replaceAll("_nether", "") + "_nether");
 					setWorldConfigOption(world, "overworld-world", world.replaceAll("_nether", ""));
 					setWorldConfigOption(world, "leaves-decay", false);
@@ -566,16 +601,48 @@ public class WorldControlHandler {
 	}
 	
 	public void generateConfiguration(){
+		setConfigOption("prefix", "&dWorld &8>>");
 		setConfigOption("worlds-to-load-on-startup", new ArrayList<String>());
 		setConfigOption("blacklist-worlds", new ArrayList<String>());
 		setConfigOption("portal-teleport-message", "You have been teleported <player>!");
 		setConfigOption("auto-update", true);
 		setConfigOption("opt-out", true);
-		setConfigOption("inventory-per-world", false);
-		setConfigOption("inventory-per-world-per-gamemode", false);
-		setConfigOption("enderchest-per-world", false);
+		setConfigOption("Per-World.inventory", false);
+		setConfigOption("Per-World.inventory-per-gamemode", false);
+		setConfigOption("Per-World.enderchest", false);
+		setConfigOption("Per-World.health", false);
+		setConfigOption("Per-World.hunger", false);
+		setConfigOption("Per-World.xp", false);
+		setConfigOption("Per-World.potion", false);
+		setConfigOption("Per-World.chat", false);
 		setConfigOption("block-logging", true);
 		setConfigOption("Autosave.time-in-mins", 15);
+	}
+	
+	public void generateMessages(){
+		setMessageOption("place-block-deny", "{PREFIX} &cYou cannot place block '&4{BLOCK}&c' in this world.");
+		setMessageOption("break-block-deny", "{PREFIX} &cYou cannot break block '&4{BLOCK}&c' in this world.");
+		setMessageOption("playerlimit-deny", "{PREFIX} &cYou cannot teleport to world '{WORLD}' becuase it has reached its player limit.");
+		setMessageOption("player-cmd-deny", "{PREFIX} &cYou cannot use &4{COMMAND} &cin this world.");
+		setMessageOption("player-chat-deny", "{PREFIX} &cYou cannot chat in world '&4{WORLD}&c'.");
+		setMessageOption("player-whitelist-deny", "{PREFIX} &cYou cannot tp to world '{WORLD}' that your not whitelisted in.");
+		setMessageOption("player-interact-deny", "{PREFIX} &cYou cannot use &4'{ITEM}' &cin this world.");
+		setMessageOption("alternate-world-deny", "{PREFIX} &cAlternate world must be created to use this portal.");
+		setMessageOption("nether-portal-deny", "{PREFIX} &cYou cannot use nether portals in this world.");
+		setMessageOption("player-world-permission-deny", "{PREFIX} &cYou do not have permission to go to this world.");
+		setMessageOption("player-eat-deny", "{PREFIX} &cYou cannot eat '&4{ITEM}&c' &cin this world.");
+	}
+	
+	public String getDenyMessage(MessageType m){
+		return MessageFile.getCustomConfig().getString(MessageTypeConvertor.translateType(m));
+	}
+	
+	public String replaceBasicPlaceholders(Player player, World world, MessageType type){
+		return getDenyMessage(type).
+		replace("{PLAYER}", player.getName()).
+		replace("{DISPLAYNAME}", player.getDisplayName()).
+		replace("{WORLD}", world.getName()).
+		replace("{PREFIX}", colorTranslate(ChatUtili.messagePrefix));
 	}
 	
 	public void startAutosave(){
@@ -645,6 +712,19 @@ public class WorldControlHandler {
 		value = null;
 	}
 	
+	public void setMessageOption(String message, Object value){
+		if (MessageFile.getCustomConfig().getString(message) == null){
+			MessageFile.getCustomConfig().set(message, value);
+			MessageFile.saveCustomConfig();
+		}
+		else {
+			return;
+		}
+		
+		message = null;
+		value = null;
+	}
+	
 	public Object getWorldSettingValue(String world, String setting){
 		return WorldConfigFile.getCustomConfig().get(world  + "." + setting);
 	}
@@ -658,40 +738,49 @@ public class WorldControlHandler {
 		}
 	}
 	
-	public void unloadWorld(Player player, String world, boolean save){
-		if (worldFolderExists(world)){
-			if (worldExists(world) == false){
-				logConsole("Cannot not unloaded a non loaded World '" + world + "'.");
-				if (player != null){
-					ChatUtili.sendTranslatedMessage(player, "&cCannot not unloaded a non loaded world '" + world + "'.");
+	public void unloadWorld(final Player player, final String world, final boolean save){
+		excuteJavaThread(new Runnable(){
+
+			@Override
+			public void run() {
+				
+				if (worldFolderExists(world)){
+					if (worldExists(world) == false){
+						logConsole("Cannot not unloaded a non loaded World '" + world + "'.");
+						if (player != null){
+							ChatUtili.sendTranslatedMessage(player, "&cCannot not unloaded a non loaded world '" + world + "'.");
+						}
+					}
+					else {
+						Bukkit.getServer().getPluginManager().callEvent(new WorldControlPreUnloadWorldEvent(player, world, Bukkit.getServer().getWorld(world).getPlayers()));
+						Bukkit.unloadWorld(world, save);
+						//Bukkit.getServer().getPluginManager().callEvent(new WorldControlUnloadWorldEvent(player, world));
+						logConsole("World '" + world + "' has unloaded.");
+						if (player != null){
+						ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' has been unloaded!");	
+						}
+					}
 				}
-			}
-			else {
-				Bukkit.getServer().getPluginManager().callEvent(new WorldControlPreUnloadWorldEvent(player, world, Bukkit.getServer().getWorld(world).getPlayers()));
-				Bukkit.unloadWorld(world, save);
-				//Bukkit.getServer().getPluginManager().callEvent(new WorldControlUnloadWorldEvent(player, world));
-				logConsole("World '" + world + "' has unloaded.");
-				if (player != null){
-				ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' has been unloaded!");	
+				else {
+					logConsole("Cannot unload world '" + world + "' that doesn't exist.");
+					if (player != null){
+					ChatUtili.sendTranslatedMessage(player, "&cCannot unload world '" + world + "' that doesn't exist.");
+					}
 				}
+				
 			}
-		}
-		else {
-			logConsole("Cannot unload world '" + world + "' that doesn't exist.");
-			if (player != null){
-			ChatUtili.sendTranslatedMessage(player, "&cCannot unload world '" + world + "' that doesn't exist.");
-			}
-		}
+			
+		});
 		
 	}
 	
-	public void copyWorld(final Player player, final String oldWorld, final String newWorld){
+	public void copyWorld(Player player, String oldWorld, String newWorld){
 		if (worldFolderExists(oldWorld)){
 			if (worldExists(oldWorld)){
 				WorldCreator creator = new WorldCreator(newWorld);
 				creator.copy(Bukkit.getWorld(oldWorld));
 				creator.createWorld();
-				logConsole("[WorldControl] World '" + oldWorld + "' has been copied to new world '" + newWorld + "'.");
+				logConsole(" World '" + oldWorld + "' has been copied to new world '" + newWorld + "'.");
 				ChatUtili.sendTranslatedMessage(player, "&aWorld '" + oldWorld + "' has been copied to new world '" + newWorld + "'.");
 			}
 			else {
@@ -706,7 +795,7 @@ public class WorldControlHandler {
 				fallbackTpOverride.add(world);
 				unloadWorld(null, world, true);
 				loadWorld(null, world);
-				logConsole("[WorldControl] World '" + world + "' has saved!.");
+				logConsole(" World '" + world + "' has saved!.");
 				ChatUtili.sendTranslatedMessage(player, "&aWorld '" + world + "' has been saved!");
 			}
 			else {
@@ -1032,12 +1121,12 @@ public class WorldControlHandler {
 	  for(int y =  minY; y <= maxY; y = y + 1){
 	    for(int z =  minZ; z <= maxZ; z = z + 1){
 	    	Block block =  new Location(loc1.getWorld(), x, y, z).getBlock();
-	    	//occurnaces++;
 	    	WorldPortalLocationFile.getCustomConfig().set(parseLocationToString(block.getLocation()), null);
 	    }
       }
 	}
 	
+	WorldPortalLocationFile.saveCustomConfig();
 	WorldPortalFile.getCustomConfig().set("portals." + portal, null);
 	WorldPortalFile.saveCustomConfig();
 
@@ -1067,15 +1156,12 @@ public class WorldControlHandler {
 	}
 	
 	public boolean materialExists(Material material){
-		boolean valid = true;
-		try {
-			Bukkit.createInventory(null, 9, "Test").addItem(new ItemStack(material));
-			valid = true;
+		if (material.isBlock() || material.isSolid() || material.isTransparent()){
+			return true;
 		}
-		catch (Exception e){
-			valid = false;
+		else { 
+			return false;
 		}
-		return valid;
 	}
 	
 	public String getCleanPortalList(){
@@ -1103,8 +1189,8 @@ public class WorldControlHandler {
 		return list;
 	}
 	
-	public List<Object> getDestinationsList(){
-		return Arrays.asList(WorldPortalFile.getCustomConfig().getConfigurationSection("destinations").getKeys(false).toArray());
+	public List<String> getDestinationsList(){
+		return Arrays.asList(WorldPortalFile.getCustomConfig().getConfigurationSection("destinations").getKeys(false).toArray(new String[0]));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -1316,7 +1402,6 @@ public class WorldControlHandler {
 	if (worldFlagExists(world, flag)){
 		try {
 			//Setting flag values
-			ChatUtili.messagePrefix = "&8[&dWF&8]";
 			if (flag.equalsIgnoreCase("player-limit") || flag.equalsIgnoreCase("mob-limit") || flag.equalsIgnoreCase("title-join-message-main-display-time") || flag.equalsIgnoreCase("title-join-message-sub-display-time")){
 				overrideWorldConfigOption(world, flag, Integer.parseInt(value[index].toString()));
 				ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7has been set to: &e" + value[index]);
@@ -1337,7 +1422,7 @@ public class WorldControlHandler {
 					ChatUtili.sendTranslatedMessage(player, "&7World &e'" + world + "' &7flag &e'"  + flag + "' &7value &e'" + value[index].toString() + "' &7has been added.");
 				}
 			}
-			else if (flag.equalsIgnoreCase("fallback-world") || flag.equalsIgnoreCase("title-join-message-main") || flag.equalsIgnoreCase("title-join-message-sub") || flag.equalsIgnoreCase("world-inventory-bind")){
+			else if (flag.equalsIgnoreCase("fallback-world") || flag.equalsIgnoreCase("title-join-message-main") || flag.equalsIgnoreCase("title-join-message-sub") || flag.equalsIgnoreCase("world-inventory-bind") || flag.equalsIgnoreCase("world-enderchest-bind") || flag.equalsIgnoreCase("world-playerstats-bind") || flag.equalsIgnoreCase("world-inventory-bind") || flag.equalsIgnoreCase("nether-world") || flag.equalsIgnoreCase("overworld-world") || flag.equalsIgnoreCase("world-chat-bind")){
 				flagStringBuilder.put(player, "");
 				for(flagLoop.put(player, index); flagLoop.get(player) < value.length; flagLoop.put(player, flagLoop.get(player) + 1)){
 					flagStringBuilder.put(player, flagStringBuilder.get(player) + value[flagLoop.get(player)] + " ");
@@ -1511,35 +1596,44 @@ public class WorldControlHandler {
 		player.sendMessage(ChatUtili.colorConvert("&7---------- "));
 	}
 	
-	public void importOldInventories(CommandSender sender){
-		ChatUtili.sendTranslatedMessage(sender, "&aStarting to import old inventories.");
-		logConsole("Starting to import old inventories.");
-		File getUserdata = new File("plugins/WorldManagement/Userdata");
-		File[] userdataFiles = getUserdata.listFiles();
-		
-		for (File file: userdataFiles){
-			if (file.isFile()){
-				if (file.getName().split("\\.")[1].equalsIgnoreCase("yml")){
-					PlayerDataFile data = new PlayerDataFile(file.getName().split("\\.")[0]);
-					
-					for (String worlds: data.getConfig().getConfigurationSection(file.getName().split("\\.")[0]).getKeys(false)){
-						List<?> items = data.getConfig().getList(file.getName().split("\\.")[0] + "." + worlds + ".inventory");
-						data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.inventory", Arrays.asList(items.toArray()));
-						data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.helm", data.getConfig().getItemStack(file.getName().split("\\.")[0] + "." + worlds + ".helm"));
-						data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.chestplate", data.getConfig().getItemStack(file.getName().split("\\.")[0] + "." + worlds + ".chestplate"));
-						data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.leggings", data.getConfig().getItemStack(file.getName().split("\\.")[0] + "." + worlds + ".leggings"));
-						data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.boots", data.getConfig().getItemStack(file.getName().split("\\.")[0] + "." + worlds + ".boots"));
-						data.saveConfig();
-						items = null;
+	public void importOldInventories(final CommandSender sender){
+		excuteJavaThread(new Runnable(){
+
+			@Override
+			public void run() {
+				
+				ChatUtili.sendTranslatedMessage(sender, "&aStarting to import old inventories.");
+				logConsole("Starting to import old inventories.");
+				File getUserdata = new File("plugins/WorldManagement/Userdata");
+				File[] userdataFiles = getUserdata.listFiles();
+				
+				for (File file: userdataFiles){
+					if (file.isFile()){
+						if (file.getName().split("\\.")[1].equalsIgnoreCase("yml")){
+							PlayerDataFile data = new PlayerDataFile(file.getName().split("\\.")[0]);
+							
+							for (String worlds: data.getConfig().getConfigurationSection(file.getName().split("\\.")[0]).getKeys(false)){
+								List<?> items = data.getConfig().getList(file.getName().split("\\.")[0] + "." + worlds + ".inventory");
+								data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.inventory", Arrays.asList(items.toArray()));
+								data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.helm", data.getConfig().getItemStack(file.getName().split("\\.")[0] + "." + worlds + ".helm"));
+								data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.chestplate", data.getConfig().getItemStack(file.getName().split("\\.")[0] + "." + worlds + ".chestplate"));
+								data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.leggings", data.getConfig().getItemStack(file.getName().split("\\.")[0] + "." + worlds + ".leggings"));
+								data.getConfig().set(file.getName().split("\\.")[0] + "." + worlds + ".main.boots", data.getConfig().getItemStack(file.getName().split("\\.")[0] + "." + worlds + ".boots"));
+								data.saveConfig();
+								items = null;
+							}
+						}
 					}
+					
+					sender.sendMessage(colorTranslate("&c&l✔ &aImported uuid: " + file.getName().split("\\.")[0]));
+					logConsole("Imported uuid: " + file.getName().split("\\.")[0]);
 				}
+				ChatUtili.sendTranslatedMessage(sender, "&aImported old inventories.");
+				logConsole("Imported old inventories.");
+				
 			}
 			
-			sender.sendMessage(colorTranslate("&c&l✔ &aImported uuid: " + file.getName().split("\\.")[0]));
-			logConsole("Imported uuid: " + file.getName().split("\\.")[0]);
-		}
-		ChatUtili.sendTranslatedMessage(sender, "&aImported old inventories.");
-		logConsole("Imported old inventories.");
+		});
 	}
 	
 	public String getCardinalDirection(Player player) {
@@ -1609,8 +1703,17 @@ public class WorldControlHandler {
 		}, 12, 13);
 	}
 	
-	public void excuteNewThread(Runnable runnable){
-		runnable.run();
+	public int excuteJavaThread(Runnable runnable){
+		int rnd = new Random().nextInt(999999);
+		threads.put(rnd, new Thread(runnable));
+		threads.get(rnd).start();
+		try {
+			threads.get(rnd).join();
+		} 
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return rnd;
 	}
 	
 	public void generateCustomWorld(CommandSender output, String newWorld, WorldGenerator gen){
@@ -1625,6 +1728,8 @@ public class WorldControlHandler {
 				c.generator(gen.name().replaceAll("_", "-"));
 				c.environment(Environment.NORMAL);
 				c.createWorld();
+				WorldData data = new WorldData(newWorld);
+				data.setGenerator(gen.name());
 				ChatUtili.sendTranslatedMessage(output, "&aGenerated plotme world '" + newWorld + "'.");
 			break;
 		}
@@ -1641,6 +1746,8 @@ public class WorldControlHandler {
 			WorldCreator c = new WorldCreator(newWorld);
 			c.generator(gen);
 			c.createWorld();
+			WorldData data = new WorldData(newWorld);
+			data.setGenerator(gen);
 			ChatUtili.sendTranslatedMessage(output, "&aGenerated " + gen + " world '" + newWorld + "'.");
 		}
 		catch (Exception e){
@@ -1662,6 +1769,13 @@ public class WorldControlHandler {
 		WorldDataFile.saveCustomConfig();
 	}
 	
+	public void modifyWorldEnviorment(String world, Environment env, WorldType type, String gen){
+		WorldDataFile.getCustomConfig().set(world + ".env", env.name().toUpperCase());
+		WorldDataFile.getCustomConfig().set(world + ".type", type.name().toUpperCase());
+		WorldDataFile.getCustomConfig().set(world + ".generator", gen);
+		WorldDataFile.saveCustomConfig();
+	}
+	
 	public void generateWorldData(World world){
 		WorldDataFile.getCustomConfig().set(world.getName() + ".env", world.getEnvironment().name().toUpperCase());
 		WorldDataFile.getCustomConfig().set(world.getName() + ".type", world.getWorldType().name().toUpperCase());
@@ -1670,7 +1784,96 @@ public class WorldControlHandler {
 		WorldDataFile.saveCustomConfig();
 	}
 	
+	public void setPlayerStat(Player player, String world, PlayerStat stat){
+		playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
+		
+		switch (stat) {
+			case HEALTH:
+				if (playerDataFile.get(player).getConfig().getString("health.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".current") != null){
+					player.setHealth(playerDataFile.get(player).getConfig().getDouble("health.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".current"));
+					player.setMaxHealth(playerDataFile.get(player).getConfig().getDouble("health.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".max"));
+				}
+				else {
+					player.setHealth(player.getMaxHealth());
+				}
+			break;
+
+			case HUNGER:
+				if (playerDataFile.get(player).getConfig().getString("hunger.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".current") != null){
+					player.setFoodLevel(playerDataFile.get(player).getConfig().getInt("hunger.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".current"));
+				}
+				else {
+					player.setFoodLevel(20);
+				}
+			break;
+			
+			case EXP:
+				if (playerDataFile.get(player).getConfig().getString("exp.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".current-level") != null){
+					player.setExp((float) playerDataFile.get(player).getConfig().getDouble("exp.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".boost"));
+					player.setLevel(playerDataFile.get(player).getConfig().getInt("exp.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".current-level"));
+				}
+				else {
+					player.setLevel(0);
+					player.setExp(0);
+					player.setTotalExperience(0);
+				}
+			break;
+			
+			case POTION:
+				playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
+				if (playerDataFile.get(player).getConfig().getString("potion.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".current") != null){
+					removePotionEffects(player);
+					playerPotions.put(player, playerDataFile.get(player).getConfig().getStringList("potion.main." + getWorldSettingValue(world, "world-playerstats-bind")  + ".current"));
+					
+					for (j.put(player, 0); j.get(player) < playerPotions.get(player).size(); j.put(player, j.get(player) + 1)){
+						player.addPotionEffect(
+						new PotionEffect(
+						PotionEffectType.getByName(playerPotions.get(player).get(j.get(player)).split("\\#")[0].toUpperCase()), 
+						Integer.parseInt(playerPotions.get(player).get(j.get(player)).split("\\#")[1]), 
+						Integer.parseInt(playerPotions.get(player).get(j.get(player)).split("\\#")[2])));
+					}
+					
+					playerPotions.get(player).clear();
+				}
+				else {
+					removePotionEffects(player);
+				}
+			break;
+			
+		default:
+			
+			break;
+		}
+	}
+	
+	public void removePotionEffects(final Player player){
+		excuteJavaThread(new Runnable(){
+
+			@Override
+			public void run() {
+				
+				while (player.getActivePotionEffects().iterator().hasNext()){
+					player.removePotionEffect(player.getActivePotionEffects().iterator().next().getType());
+				}
+				
+			}
+			
+		});
+	}
+	
+	public List<Player> getPlayerCollection(Player player, String[] world){
+		playerCollection.put(player.getName(), new ArrayList<Player>());
+		
+		for (k.put(player, 0); k.get(player) < world.length; k.put(player, k.get(player) + 1)){	
+			if (worldExists(world[k.get(player)])){
+				playerCollection.get(player.getName()).addAll(Bukkit.getWorld(world[k.get(player)]).getPlayers());
+			}
+		}
+		
+		return playerCollection.get(player.getName());
+	}
+	
 	public void logConsole(String message){
-		System.out.println("[WorldControl] " + message);	
+		getWorldControl().getLogger().info(message);
 	}
 }

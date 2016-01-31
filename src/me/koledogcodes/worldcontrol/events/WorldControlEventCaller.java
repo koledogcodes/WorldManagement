@@ -80,7 +80,7 @@ public class WorldControlEventCaller {
 						prevWorlds.put(0, WorldControl.getAllWorlds());
 					}
 					
-					if (WorldControl.getAllWorlds().size() < prevWorlds.get(0).size()){
+					if (prevWorlds.get(0).size() > WorldControl.getAllWorlds().size()){
 						Bukkit.getServer().getPluginManager().callEvent(new WorldControlDeleteWorldEvent(prevWorlds.get(0).get(prevWorlds.get(0).size() - 1)));
 						prevWorlds.put(0, WorldControl.getAllWorlds());
 					}

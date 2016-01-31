@@ -69,10 +69,9 @@ public class BukkitWorldControlPortalEvent implements Listener {
 	public void onPlayerWalk(PlayerMoveEvent e){
 		Player player = e.getPlayer();
 		
-		if (WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation())) == null){ return; }
-		
 		if (e.getFrom().getBlockX() == e.getTo().getBlockX() && e.getFrom().getBlockY() == e.getTo().getBlockY() && e.getFrom().getBlockZ() == e.getTo().getBlockZ()){ return; }
-		
+		if (WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation())) == null){ return; }
+
 		if (player.hasPermission("worldcontrol.portal.*") == false){
 			if (player.hasPermission("worldcontrol.portal." + WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation())))){
 				if (new WorldControlPortalEvent(player, player.getLocation(), WorldControl.getPortalDestinationLocation(WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation()))), WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(player.getLocation()))).isCancelled()){
@@ -84,7 +83,7 @@ public class BukkitWorldControlPortalEvent implements Listener {
 				ChatUtili.sendSimpleTranslatedMessage(player, ConfigFile.getCustomConfig().getString("portal-teleport-message").replaceAll("<player>", player.getName()));
 			}
 			else {
-				ChatUtili.sendTranslatedMessage(player, "&cYou do not have permission to use this portal.");
+				ChatUtili.sendSimpleTranslatedMessage(player, "&c&lError: &7You do not have permission to use this portal.");
 			}
 		}
 		else {

@@ -4,24 +4,25 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
+import me.koledogcodes.worldcontrol.configs.ConfigFile;
+
 public class ChatUtili {
 
 	/* Constructor */
 	public ChatUtili() {
 	}
 	
-	public static String messagePrefix = "&8[&aWControl&8]";
+	public static String messagePrefix = colorConvert(ConfigFile.getCustomConfig().getString("prefix"));
 	
 	public static void sendTranslatedMessage(CommandSender player, String message){
 	if (messagePrefix != null){
 		if (player != null){
-		player.sendMessage(ChatColor.translateAlternateColorCodes('&', messagePrefix + " " + message));
-		messagePrefix = "&8[&aWControl&8]";
+			player.sendMessage(ChatColor.translateAlternateColorCodes('&', messagePrefix + " " + message));
 		}
 	}
 	else {
 		if (player != null){
-		player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+			player.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
 		}
 	}
 	}
