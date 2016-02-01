@@ -11,11 +11,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import me.koledogcodes.worldcontrol.WorldControl;
 
-public class BlockDataFile {
+public class OriginalBlockDataFile {
 	
 	//Instance
 	static WorldControl plugin;
-	public BlockDataFile(WorldControl i){
+	public OriginalBlockDataFile(WorldControl i){
 	plugin = i;
 	}
 	
@@ -24,12 +24,12 @@ public class BlockDataFile {
 	private static InputStream defConfigStream;
 	public static void reloadCustomConfig(){
 		
-	if (customConfigFile == null) {	
-	customConfigFile = new File(plugin.getDataFolder() + "/Logs", "Block-Data.yml"); 
+	if (customConfigFile == null) {
+	customConfigFile = new File(plugin.getDataFolder() + "/Logs", "Rollback-Data.yml"); 
 	}
 	customConfig = YamlConfiguration.loadConfiguration(customConfigFile);
 	 
-	 defConfigStream = plugin.getResource("Block-Data.yml");
+	 defConfigStream = plugin.getResource("Rollback-Data.yml");
 	if (defConfigStream != null) {
 	@SuppressWarnings("deprecation")
 	YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(defConfigStream);

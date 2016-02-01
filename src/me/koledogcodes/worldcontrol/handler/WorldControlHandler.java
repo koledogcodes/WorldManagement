@@ -38,6 +38,7 @@ import me.koledogcodes.worldcontrol.api.WorldGenerator;
 import me.koledogcodes.worldcontrol.configs.BlockDataFile;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.MessageFile;
+import me.koledogcodes.worldcontrol.configs.OriginalBlockDataFile;
 import me.koledogcodes.worldcontrol.configs.PlayerDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldDataFile;
@@ -70,6 +71,7 @@ public class WorldControlHandler {
 		plugin = control;
 	}
 	
+	private BlockVector vector = new BlockVector();
 	private final static int RESULTS_PER_PAGE = 6;
 	private WorldControlTimer timer = new WorldControlTimer();
 	private HashMap<Integer, Thread> threads = new HashMap<Integer, Thread>();
@@ -116,6 +118,7 @@ public class WorldControlHandler {
 	private HashMap<String, List<String>> worldWhitelist = new HashMap<String, List<String>>();
 	private HashMap<String, List<Player>> playerCollection = new HashMap<String, List<Player>>();
 	private HashMap<Player, PlayerDataFile> playerDataFile = new HashMap<Player, PlayerDataFile>();
+	private HashMap<String, List<String>> log = new HashMap<String, List<String>>();
 	
 	public boolean deleteWorld(String world, File path) {
 	      if(path.exists()) {
@@ -161,7 +164,7 @@ public class WorldControlHandler {
 		}
 	}
 	
-	public void createWorld(Player player, String world, WorldType world_type, Environment envoirment, boolean generateStructures, int seed){
+	public void createWorld(Player player, String world, WorldType world_type, Environment envoirment, boolean generateStructures, long seed){
 		if (world.toUpperCase().equals(world)){
 			ChatUtili.sendTranslatedMessage(player, "&cYou cannot create a world that is all uppercase.");
 			return;
@@ -607,6 +610,8 @@ public class WorldControlHandler {
 		setConfigOption("portal-teleport-message", "You have been teleported <player>!");
 		setConfigOption("auto-update", true);
 		setConfigOption("opt-out", true);
+		setConfigOption("Nether-Portals.overworld-nether-serach-raduis", 1);
+		setConfigOption("Nether-Portals.nether-overworld-serach-raduis", 8);
 		setConfigOption("Per-World.inventory", false);
 		setConfigOption("Per-World.inventory-per-gamemode", false);
 		setConfigOption("Per-World.enderchest", false);
@@ -1223,16 +1228,16 @@ public class WorldControlHandler {
 		}
 		
 		if (mode == null){
-			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".main.helm") != null){
-				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".main.helm"));
+			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + ".main.helm") != null){
+				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + ".main.helm"));
 			}
 			else {
 				player.getInventory().setHelmet(new ItemStack(Material.AIR));	
 			}
 		}
 		else {
-			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + mode.name().toLowerCase() + ".helm") != null){
-				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + mode.name().toLowerCase() + ".helm"));
+			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + "." + mode.name().toLowerCase() + ".helm") != null){
+				player.getInventory().setHelmet(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + "." + mode.name().toLowerCase() + ".helm"));
 			}
 			else {
 				player.getInventory().setHelmet(new ItemStack(Material.AIR));	
@@ -1240,16 +1245,16 @@ public class WorldControlHandler {
 		}
 		
 		if (mode == null){
-			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".main.chestplate") != null){
-				player.getInventory().setChestplate(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".main.chestplate"));
+			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + ".main.chestplate") != null){
+				player.getInventory().setChestplate(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + ".main.chestplate"));
 			}
 			else {
 				player.getInventory().setChestplate(new ItemStack(Material.AIR));	
 			}
 		}
 		else {
-			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + mode.name().toLowerCase() + ".chestplate") != null){
-				player.getInventory().setChestplate(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + mode.name().toLowerCase() + ".chestplate"));
+			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + "." + mode.name().toLowerCase() + ".chestplate") != null){
+				player.getInventory().setChestplate(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + "." + mode.name().toLowerCase() + ".chestplate"));
 			}
 			else {
 				player.getInventory().setChestplate(new ItemStack(Material.AIR));	
@@ -1257,16 +1262,16 @@ public class WorldControlHandler {
 		}
 		
 		if (mode == null){
-			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".main.leggings") != null){
-				player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".main.leggings"));
+			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + ".main.leggings") != null){
+				player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + ".main.leggings"));
 			}
 			else {
 				player.getInventory().setLeggings(new ItemStack(Material.AIR));	
 			}
 		}
 		else {
-			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + mode.name().toLowerCase() + ".leggings") != null){
-				player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + mode.name().toLowerCase() + ".leggings"));
+			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + "." + mode.name().toLowerCase() + ".leggings") != null){
+				player.getInventory().setLeggings(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + "." + mode.name().toLowerCase() + ".leggings"));
 			}
 			else {
 				player.getInventory().setLeggings(new ItemStack(Material.AIR));	
@@ -1274,16 +1279,16 @@ public class WorldControlHandler {
 		}
 		
 		if (mode == null){
-			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".main.boots") != null){
-				player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + ".main.boots"));
+			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + ".main.boots") != null){
+				player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + ".main.boots"));
 			}
 			else {
 				player.getInventory().setBoots(new ItemStack(Material.AIR));	
 			}
 		}
 		else {
-			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + mode.name().toLowerCase() + ".boots") != null){
-				player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + player.getWorld().getName() + "." + mode.name().toLowerCase() + ".boots"));
+			if (playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + "." + mode.name().toLowerCase() + ".boots") != null){
+				player.getInventory().setBoots(playerDataFile.get(player).getConfig().getItemStack(player.getUniqueId().toString() + "." + getWorldSettingValue(player.getWorld().getName(), "world-inventory-bind").toString() + "." + mode.name().toLowerCase() + ".boots"));
 			}
 			else {
 				player.getInventory().setBoots(new ItemStack(Material.AIR));	
@@ -1294,6 +1299,7 @@ public class WorldControlHandler {
 	}
 	
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	public void setWorldInventory(Player player, String world, GameMode mode){
 		playerDataFile.put(player, new PlayerDataFile(player.getUniqueId().toString()));
 		
@@ -1873,7 +1879,75 @@ public class WorldControlHandler {
 		return playerCollection.get(player.getName());
 	}
 	
+	public void setReverBlockInfo(final Location loc, final Material type, final int data){
+		excuteJavaThread(new Runnable(){
+
+			@Override
+			public void run() {
+				
+				if (OriginalBlockDataFile.getCustomConfig().getString(parseLocationToString(loc)) == null){
+					OriginalBlockDataFile.getCustomConfig().set(parseLocationToString(loc) + ".block", type.name());
+					OriginalBlockDataFile.getCustomConfig().set(parseLocationToString(loc) + ".type", data);
+					OriginalBlockDataFile.saveCustomConfig();
+				}
+				else {
+					return;
+				}
+				
+			}
+			
+		});
+	}
+	
+	public void setBlockInformation(final String source, final Location loc, final long timestamp, final Material type, final String action){
+		excuteJavaThread(new Runnable(){
+
+			@Override
+			public void run() {
+				
+				if (BlockDataFile.getCustomConfig().getString(parseLocationToString(loc)) == null){
+					log.put(source, BlockDataFile.getCustomConfig().getStringList(parseLocationToString(loc)));
+					log.get(source).add(source + "#" + System.currentTimeMillis() + "#" + type.name() + "#broken");
+					BlockDataFile.getCustomConfig().set(parseLocationToString(loc), log.get(source));
+				}
+				else {
+					log.put(source, BlockDataFile.getCustomConfig().getStringList(parseLocationToString(loc)));
+					log.get(source).add(source + "#" + System.currentTimeMillis() + "#" + type.name() + "#broken");
+					BlockDataFile.getCustomConfig().set(parseLocationToString(loc), log.get(source));
+				}
+				
+			}
+			
+		});
+	}
+	
+	public void rollbackBlocks(Player player, Location start, int radius){
+		vector.rollbackBlockFromLocation(player, start, radius);
+	}
+	
 	public void logConsole(String message){
 		getWorldControl().getLogger().info(message);
+	}
+
+	public void setReverBlockInfo(final List<Block> blockList) {
+		
+		excuteJavaThread(new Runnable(){
+
+			@SuppressWarnings("deprecation")
+			@Override
+			public void run() {
+				
+				for (Block block: blockList){
+					setReverBlockInfo(block.getLocation(), block.getType(), block.getData());
+				}
+				
+			}
+			
+		});
+		
+	}
+	
+	public void messagePluginUpdate(Player player){
+
 	}
 }

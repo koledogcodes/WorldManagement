@@ -70,6 +70,11 @@ public class BukkitWorldControlEvent implements Listener {
 	@EventHandler 
 	public void onPlayerJoinGameSetFile(PlayerJoinEvent e){
 		Player player = e.getPlayer();
+
+		if (player.hasPermission("worldcontrol.admin.*")){
+			WorldControl.messagePluginUpdate(player);
+		}
+		
 		if (ConfigFile.getCustomConfig().getBoolean("Per-World.inventory") == false 
 		&& ConfigFile.getCustomConfig().getBoolean("Per-World.enderchest") == false 
 		&& ConfigFile.getCustomConfig().getBoolean("Per-World.health") == false 
@@ -475,7 +480,7 @@ public class BukkitWorldControlEvent implements Listener {
 						TravelAgent travel = e.getPortalTravelAgent();
 						Location newLoc = player.getLocation().clone();
 						newLoc.setWorld(Bukkit.getWorld((String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "nether-world")));
-						travel.setSearchRadius(50);
+						travel.setSearchRadius(ConfigFile.getCustomConfig().getInt("Nether-Portals.overworld-nether-serach-raduis"));
 						travel.findOrCreate(newLoc);
 						
 						e.useTravelAgent(true);
@@ -486,7 +491,7 @@ public class BukkitWorldControlEvent implements Listener {
 						TravelAgent travel = e.getPortalTravelAgent();
 						Location newLoc = player.getLocation().clone();
 						newLoc.setWorld(Bukkit.getWorld((String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "overworld-world")));
-						travel.setSearchRadius(50);
+						travel.setSearchRadius(ConfigFile.getCustomConfig().getInt("Nether-Portals.nether-overworld-serach-raduis"));
 						travel.findOrCreate(newLoc);
 						
 						e.useTravelAgent(true);

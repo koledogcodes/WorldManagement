@@ -39,7 +39,7 @@ public class worldControlCommand implements CommandExecutor {
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		
 		if (sender instanceof Player == false){
-		ChatUtili.sendTranslatedMessage(sender, "&cYou must be ingame to use &4/" + cmd.getName() + ".");	
+			ChatUtili.sendTranslatedMessage(sender, "&cYou must be ingame to use &4/" + cmd.getName() + ".");	
 			return true;
 		}
 		
@@ -53,7 +53,7 @@ public class worldControlCommand implements CommandExecutor {
 		
 		if (args.length == 0){
 		ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
-		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc create <world> &3<world type> &3<envoirment> &3<generate structures> &3<seed>", " &b- &b(Hover)", "&aThis command simply creates a world with features.");
+		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc create <world> &3<world type> &3<env> &3<generate &3structures> &3<seed>", " &b- &b(Hover)", "&aThis command simply creates a world with features.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc delete <world>", " &b- &b(Hover)", "&aThis command simply deletes a world.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc exist <world>", " &b- &b(Hover)", "&aThis command simply checks if a world exists.");
 		packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc load <world>", " &b- &b(Hover)", "&aThis command simply loads exisitng worlds.");
@@ -187,6 +187,9 @@ public class worldControlCommand implements CommandExecutor {
 		}
 		else if (args[0].equalsIgnoreCase("modify")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a world to modify.");
+		}
+		else if (args[0].equalsIgnoreCase("rollback")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a raduis.");
 		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
@@ -355,6 +358,7 @@ public class worldControlCommand implements CommandExecutor {
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bWorldControl Command Page &3-----");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc getflag <world> <flag>", " &b- &b(Hover)", "&aGets the flag value of a specfic world.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc modify <world> <environment> <world type>", " &b- &b(Hover)", "&aModifies a world environment and or world type \n&c&lWarning: &7When modifying worlds, houses etc will not be transferred to the new type or environment!");
+				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc rollback <radius>", " &b- &b(Hover)", "&aRollbacks all blocks to their orginal state. (Since WCM was installed)");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc version", " &b- &b(Hover)", "&aGets the plugin version.");
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
@@ -423,6 +427,14 @@ public class worldControlCommand implements CommandExecutor {
 			}
 			else {
 				ChatUtili.sendTranslatedMessage(player, "&cWorld '" + args[1] + "' does not exist.");
+			}
+		}
+		else if (args[0].equalsIgnoreCase("rollback")){
+			try {
+				WorldControl.rollbackBlocks(player, player.getLocation(), Integer.parseInt(args[1]));
+			}
+			catch (Exception e){
+				ChatUtili.sendTranslatedMessage(player, "&cInvalid raduis suppilied!");
 			}
 		}
 		else {
@@ -615,7 +627,7 @@ public class worldControlCommand implements CommandExecutor {
 		if (args.length == 6){
 			if (args[0].equalsIgnoreCase("create")){
 				try {
-					WorldControl.createWorld(player, args[1], WorldType.valueOf(args[2].toUpperCase()), Environment.valueOf(args[3].toUpperCase()), Boolean.valueOf(args[4]), Integer.parseInt(args[5]));
+					WorldControl.createWorld(player, args[1], WorldType.valueOf(args[2].toUpperCase()), Environment.valueOf(args[3].toUpperCase()), Boolean.valueOf(args[4]), Long.parseLong(args[5]));
 				}
 				catch (Exception e){
 					ChatUtili.sendTranslatedMessage(player, "&cInvalid argument given.");

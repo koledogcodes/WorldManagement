@@ -19,6 +19,7 @@ import me.koledogcodes.worldcontrol.commands.worldControlTabCompletionCommand;
 import me.koledogcodes.worldcontrol.configs.BlockDataFile;
 import me.koledogcodes.worldcontrol.configs.ConfigFile;
 import me.koledogcodes.worldcontrol.configs.MessageFile;
+import me.koledogcodes.worldcontrol.configs.OriginalBlockDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldConfigFile;
 import me.koledogcodes.worldcontrol.configs.WorldDataFile;
 import me.koledogcodes.worldcontrol.configs.WorldPortalFile;
@@ -32,14 +33,13 @@ import me.koledogcodes.worldcontrol.events.BukkitWorldControlLogEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlPortalEvent;
 import me.koledogcodes.worldcontrol.events.BukkitWorldControlSignEvent;
 import me.koledogcodes.worldcontrol.events.WorldControlEventCaller;
+import me.koledogcodes.worldcontrol.handler.BlockVector;
 import me.koledogcodes.worldcontrol.handler.ChatUtili;
 import me.koledogcodes.worldcontrol.handler.WorldControlHandler;
 import me.koledogcodes.worldcontrol.timer.WorldControlTimer;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketHandler;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutClickChat;
 import me.koledogcodes.worldcontrol.wrapped.packets.PacketOutHoverChat;
-import net.gravitydevelopment.updater.Updater;
-import net.gravitydevelopment.updater.Updater.UpdateType;
 
 public class WorldControl extends JavaPlugin {
 
@@ -47,17 +47,8 @@ public class WorldControl extends JavaPlugin {
 	public static List<Timer> activeTimers = new ArrayList<Timer>();
 	public static List<TimerTask> activeTasks = new ArrayList<TimerTask>();
 	
-	@SuppressWarnings("unused")
 	public void onEnable(){
 		try {
-			Updater updater = null;
-			if (getConfig().getBoolean("auto-update")){
-				updater = new Updater(this, 95788, getFile(), UpdateType.DEFAULT, false);
-			}
-			else {
-				updater = new Updater(this, 95788, getFile(), UpdateType.NO_DOWNLOAD, true);
-			}
-
 			Metrics metrics = new Metrics(this);
 			if (getConfig().getBoolean("opt-out")){
 				metrics.start();
@@ -80,6 +71,7 @@ public class WorldControl extends JavaPlugin {
 		}
 		
 		new WorldControlHandler(this);
+		new BlockVector();
 		new ConfigFile (this);
 		new WorldConfigFile (this);
 		new WorldWhitelistFile (this);
@@ -88,6 +80,7 @@ public class WorldControl extends JavaPlugin {
 		new WorldPortalFile (this);
 		new WorldPortalLocationFile (this);
 		new BlockDataFile (this);
+		new OriginalBlockDataFile(this);
 		new MessageFile(this);
 		
 		handler = new WorldControlHandler(this);
@@ -112,6 +105,7 @@ public class WorldControl extends JavaPlugin {
 		BlockDataFile.reloadCustomConfig();
 		WorldDataFile.reloadCustomConfig();
 		MessageFile.reloadCustomConfig();
+		OriginalBlockDataFile.reloadCustomConfig();
 		
 		WorldControlHandler.setInstance(this);
 		
@@ -154,7 +148,7 @@ public class WorldControl extends JavaPlugin {
 		worldControlCommand.prefix = ChatUtili.messagePrefix;
 		worldControlGeneratorCommand.prefix = ChatUtili.messagePrefix;
 		worldControlImportCommand.prefix = ChatUtili.messagePrefix;
-		
+
 		handler.logConsole("WorldManagement has been enabled");
 	}
 	

@@ -3,12 +3,15 @@ package me.koledogcodes.worldcontrol.events;
 import java.util.HashMap;
 import java.util.List;
 
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 
 import me.koledogcodes.worldcontrol.WorldControl;
@@ -33,6 +36,8 @@ public class BukkitWorldControlLogEvent implements Listener {
 		if (e.canBuild() == false){ return; }
 		if (ConfigFile.getCustomConfig().getBoolean("block-logging") == false){ return; }
 		
+		WorldControl.setReverBlockInfo(e.getBlockPlaced().getLocation(), Material.AIR, 0);
+		
 		if (BlockDataFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation())) == null){
 			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation())));
 			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlockPlaced().getType().name() + "#placed");
@@ -43,13 +48,17 @@ public class BukkitWorldControlLogEvent implements Listener {
 			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlockPlaced().getType().name() + "#placed");
 			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlockPlaced().getLocation()), log.get(player));
 		}
+		
 	}
 	
 	//TODO Player Break Block [LOG]
+	@SuppressWarnings("deprecation")
 	@EventHandler
 	public void onPlayerBreakBlockLog(BlockBreakEvent e){
 		Player player = e.getPlayer();
 		if (ConfigFile.getCustomConfig().getBoolean("block-logging") == false){ return; }
+		
+		WorldControl.setReverBlockInfo(e.getBlock().getLocation(), e.getBlock().getType(), e.getBlock().getData());
 		
 		if (BlockDataFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlock().getLocation())) == null){
 			log.put(player, BlockDataFile.getCustomConfig().getStringList(WorldControl.parseLocationToString(e.getBlock().getLocation())));
@@ -61,6 +70,20 @@ public class BukkitWorldControlLogEvent implements Listener {
 			log.get(player).add(player.getName() + "#" + System.currentTimeMillis() + "#" + e.getBlock().getType().name() + "#broken");
 			BlockDataFile.getCustomConfig().set(WorldControl.parseLocationToString(e.getBlock().getLocation()), log.get(player));
 		}
+		
+	}
+	
+	//TODO Explosion Break Block [LOG]
+	@SuppressWarnings("deprecation")
+	@EventHandler
+	public void onEntityExplode(EntityExplodeEvent e){
+		if (ConfigFile.getCustomConfig().getBoolean("block-logging") == false){ return; }
+		
+		for (Block block: e.blockList()){
+			WorldControl.setReverBlockInfo(block.getLocation(), block.getType(), block.getData());
+			WorldControl.setBlockInformation(e.getEntity().getType().name(), block.getLocation(), System.currentTimeMillis(), block.getType(), "broken");
+		}
+
 	}
 	
 	//TODO Player View BlockData [LOG]
