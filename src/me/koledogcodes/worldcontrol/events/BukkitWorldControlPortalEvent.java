@@ -99,4 +99,5 @@ public class BukkitWorldControlPortalEvent implements Listener {
 		if (WorldPortalLocationFile.getCustomConfig().getString(WorldControl.parseLocationToString(e.getBlock().getLocation())) == null){ return; }
 		e.setCancelled(true);
 	}
+	
 }

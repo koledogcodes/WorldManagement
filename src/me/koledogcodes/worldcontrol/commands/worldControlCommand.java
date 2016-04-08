@@ -35,6 +35,7 @@ public class worldControlCommand implements CommandExecutor {
 	public static String prefix = ChatUtili.messagePrefix;
 	private WorldControlHandler WorldControl = new WorldControlHandler();
 	
+	@SuppressWarnings("deprecation")
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		
@@ -190,6 +191,9 @@ public class worldControlCommand implements CommandExecutor {
 		}
 		else if (args[0].equalsIgnoreCase("rollback")){
 			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a raduis.");
+		}
+		else if (args[0].equalsIgnoreCase("regen-chunk")){
+			ChatUtili.sendTranslatedMessage(player, "&cPlease provide a x and y coord.");
 		}
 		else {
 			packetHoverMessage.sendHoverMessage(player, prefix,  " &cInvalid argument.", "&cPlease type &4/worldcontrol &cto find 'WorldControl' commands.");
@@ -359,6 +363,7 @@ public class worldControlCommand implements CommandExecutor {
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc getflag <world> <flag>", " &b- &b(Hover)", "&aGets the flag value of a specfic world.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc modify <world> <environment> <world type>", " &b- &b(Hover)", "&aModifies a world environment and or world type \n&c&lWarning: &7When modifying worlds, houses etc will not be transferred to the new type or environment!");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc rollback <radius>", " &b- &b(Hover)", "&aRollbacks all blocks to their orginal state. (Since WCM was installed)");
+				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc regen-chunk <x, z>", " &b- &b(Hover)", "&aRegenrates a chunk at x, z.");
 				packetHoverMessage.sendHoverMessage(player, prefix + " &3/wc version", " &b- &b(Hover)", "&aGets the plugin version.");
 				ChatUtili.sendTranslatedMessage(player, "&3----- &bPage " + args[1] + "/" + MAX_PAGE + " &3-----");
 			}
@@ -435,6 +440,18 @@ public class worldControlCommand implements CommandExecutor {
 			}
 			catch (Exception e){
 				ChatUtili.sendTranslatedMessage(player, "&cInvalid raduis suppilied!");
+			}
+		}
+		else if (args[0].equalsIgnoreCase("regen-chunk")){
+			try {
+				player.getWorld().regenerateChunk(Integer.parseInt(args[1].split(",")[0]), Integer.parseInt(args[1].split(",")[1]));
+				player.getWorld().refreshChunk(Integer.parseInt(args[1].split(",")[0]), Integer.parseInt(args[1].split(",")[1]));
+				player.getWorld().unloadChunk(Integer.parseInt(args[1].split(",")[0]), Integer.parseInt(args[1].split(",")[1]));
+				player.getWorld().loadChunk(Integer.parseInt(args[1].split(",")[0]), Integer.parseInt(args[1].split(",")[1]));
+				ChatUtili.sendTranslatedMessage(player, "&aChunk at (x:" + args[1].split(",")[0] + " and y:" + args[1].split(",")[1] + ") has been regenerated!");
+			}
+			catch (Exception e){
+				ChatUtili.sendTranslatedMessage(player, "&cInvalid x/z coord");
 			}
 		}
 		else {

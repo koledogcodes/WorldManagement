@@ -1,6 +1,6 @@
 name: WorldManagement
 main: me.koledogcodes.worldcontrol.WorldControl
-version: 2.1
+version: 2.3
 commands:
   worldcontrol:
     description: General command for WorldControl.

@@ -479,6 +479,8 @@ public class BukkitWorldControlEvent implements Listener {
 					if (player.getWorld().getEnvironment().equals(Environment.NORMAL)){
 						TravelAgent travel = e.getPortalTravelAgent();
 						Location newLoc = player.getLocation().clone();
+						newLoc.setX(newLoc.getX() / 8);
+						newLoc.setZ(newLoc.getZ() / 8);
 						newLoc.setWorld(Bukkit.getWorld((String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "nether-world")));
 						travel.setSearchRadius(ConfigFile.getCustomConfig().getInt("Nether-Portals.overworld-nether-serach-raduis"));
 						travel.findOrCreate(newLoc);
@@ -490,6 +492,8 @@ public class BukkitWorldControlEvent implements Listener {
 					else if (player.getWorld().getEnvironment().equals(Environment.NETHER)){
 						TravelAgent travel = e.getPortalTravelAgent();
 						Location newLoc = player.getLocation().clone();
+						newLoc.setX(newLoc.getX() * 8);
+						newLoc.setZ(newLoc.getZ() * 8);
 						newLoc.setWorld(Bukkit.getWorld((String) WorldControl.getWorldSettingValue(player.getWorld().getName(), "overworld-world")));
 						travel.setSearchRadius(ConfigFile.getCustomConfig().getInt("Nether-Portals.nether-overworld-serach-raduis"));
 						travel.findOrCreate(newLoc);
